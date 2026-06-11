@@ -1,17 +1,20 @@
-use headless_chrome::{Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptions, Tab, types::PrintToPdfOptions};
 use std::fs::File;
 use std::io::Write;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tempfile::Builder;
 use base64::{Engine as _, engine::general_purpose};
-use pulldown_cmark::{Parser, Options, html};
 
-// 宣告 Tauri 狀態結構，用於常駐瀏覽器單例
+// 宣告 Tauri 狀態結構，常駐瀏覽器與分頁單例
 pub struct ChromeBrowser {
     pub browser: Mutex<Option<Browser>>,
+    pub tab: Mutex<Option<Arc<Tab>>>,
 }
 
 fn markdown_to_html_with_css(markdown: &str, css: &str) -> String {
+    use pulldown_cmark::{Parser, Options, html, Event, Tag};
+    use std::path::{Path, PathBuf};
+
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_FOOTNOTES);
@@ -19,9 +22,56 @@ fn markdown_to_html_with_css(markdown: &str, css: &str) -> String {
     options.insert(Options::ENABLE_TASKLISTS);
     options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+
     let parser = Parser::new_ext(markdown, options);
+    let mut events = Vec::new();
+
+    for event in parser {
+        match event {
+            Event::Start(Tag::Image { link_type, dest_url, title, id }) => {
+                let dest_str = dest_url.to_string();
+                if !dest_str.starts_with("http://")
+                    && !dest_str.starts_with("https://")
+                    && !dest_str.starts_with("data:")
+                {
+                    let img_path = if Path::new(&dest_str).is_absolute() {
+                        PathBuf::from(&dest_str)
+                    } else {
+                        exe_dir.join(&dest_str)
+                    };
+
+                    if let Ok(img_data) = std::fs::read(&img_path) {
+                        let mime_type = match img_path.extension().and_then(|s| s.to_str()) {
+                            Some("png") | Some("PNG") => "image/png",
+                            Some("jpg") | Some("JPG") | Some("jpeg") | Some("JPEG") => "image/jpeg",
+                            Some("gif") | Some("GIF") => "image/gif",
+                            Some("svg") | Some("SVG") => "image/svg+xml",
+                            Some("webp") | Some("WEBP") => "image/webp",
+                            _ => "image/png",
+                        };
+                        let encoded = general_purpose::STANDARD.encode(img_data);
+                        let data_url = format!("data:{};base64,{}", mime_type, encoded);
+                        events.push(Event::Start(Tag::Image {
+                            link_type,
+                            dest_url: data_url.into(),
+                            title,
+                            id,
+                        }));
+                        continue;
+                    }
+                }
+                events.push(Event::Start(Tag::Image { link_type, dest_url, title, id }));
+            }
+            _ => events.push(event),
+        }
+    }
+
     let mut html_output = String::new();
-    html::push_html(&mut html_output, parser);
+    html::push_html(&mut html_output, events.into_iter());
 
     format!(
         r#"<!DOCTYPE html>
@@ -29,6 +79,30 @@ fn markdown_to_html_with_css(markdown: &str, css: &str) -> String {
 <head>
 <meta charset="utf-8">
 <style>
+* {{
+  box-sizing: border-box;
+}}
+html, body {{
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}}
+::-webkit-scrollbar {{
+  display: none !important;
+}}
+img {{
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}}
+pre, table {{
+  max-width: 100%;
+  overflow-x: auto;
+}}
 {}
 </style>
 </head>
@@ -38,6 +112,52 @@ fn markdown_to_html_with_css(markdown: &str, css: &str) -> String {
 </html>"#,
         css, html_output
     )
+}
+
+// 嘗試使用常駐 Tab 進行 PDF 渲染的輔助函數
+fn try_pdf_render(file_url: &str, state: &tauri::State<'_, ChromeBrowser>) -> Result<String, String> {
+    let mut browser_guard = state.browser.lock().map_err(|_| "無法獲取瀏覽器鎖")?;
+    let mut tab_guard = state.tab.lock().map_err(|_| "無法獲取瀏覽器鎖")?;
+    
+    // 如果尚未初始化，進行初始化
+    if browser_guard.is_none() {
+        let launch_options = LaunchOptions::default_builder()
+            .headless(true)
+            .build()
+            .map_err(|e| format!("無法配置瀏覽器啟動參數: {}", e))?;
+
+        let browser = Browser::new(launch_options)
+            .map_err(|e| format!("啟動瀏覽器失敗（請確認本機已安裝 Microsoft Edge 或 Google Chrome）: {}", e))?;
+        
+        let tab = browser.new_tab()
+            .map_err(|e| format!("無法開啟初始分頁: {}", e))?;
+
+        *browser_guard = Some(browser);
+        *tab_guard = Some(tab);
+    }
+    
+    let tab = tab_guard.as_ref().unwrap();
+
+    // 在分頁中載入網頁
+    tab.navigate_to(file_url)
+        .map_err(|e| format!("載入頁面失敗: {}", e))?;
+    
+    tab.wait_until_navigated()
+        .map_err(|e| format!("載入頁面超時: {}", e))?;
+
+    // 配置 PDF 列印參數，啟用 prefer_css_page_size
+    let pdf_options = PrintToPdfOptions {
+        prefer_css_page_size: Some(true),
+        ..Default::default()
+    };
+
+    // 列印成 PDF
+    let pdf_bytes = tab
+        .print_to_pdf(Some(pdf_options))
+        .map_err(|e| format!("列印 PDF 失敗: {}", e))?;
+
+    let b64 = general_purpose::STANDARD.encode(pdf_bytes);
+    Ok(b64)
 }
 
 #[tauri::command]
@@ -60,43 +180,30 @@ fn generate_pdf(
         .map_err(|e| format!("無法寫入暫存檔: {}", e))?;
 
     let temp_path = temp_file.path().to_str().ok_or("暫存檔路徑無效")?;
-
-    // 3. 取得或惰性初始化常駐的無頭瀏覽器實例（使用 try_lock 避免多個渲染任務重疊時排隊卡死）
-    let mut browser_guard = state.browser.try_lock().map_err(|_| "另一項 PDF 渲染任務正在進行中...")?;
-    if browser_guard.is_none() {
-        let launch_options = LaunchOptions::default_builder()
-            .headless(true)
-            .build()
-            .map_err(|e| format!("無法配置瀏覽器啟動參數: {}", e))?;
-
-        let browser = Browser::new(launch_options)
-            .map_err(|e| format!("啟動瀏覽器失敗（請確認本機已安裝 Microsoft Edge 或 Google Chrome）: {}", e))?;
-        *browser_guard = Some(browser);
-    }
-    
-    let browser = browser_guard.as_ref().unwrap();
-
-    // 4. 開啟新分頁
-    let tab = browser
-        .new_tab()
-        .map_err(|e| format!("無法開啟分頁: {}", e))?;
-
     let file_url = format!("file://{}", temp_path);
 
-    // 5. 載入暫存網頁並列印
-    tab.navigate_to(&file_url)
-        .map_err(|e| format!("載入頁面失敗: {}", e))?;
-    
-    tab.wait_until_navigated()
-        .map_err(|e| format!("載入頁面超時: {}", e))?;
+    // 3. 嘗試使用常駐瀏覽器進行渲染
+    let result = try_pdf_render(&file_url, &state);
 
-    let pdf_bytes = tab
-        .print_to_pdf(None)
-        .map_err(|e| format!("列印 PDF 失敗: {}", e))?;
-
-    // 6. 轉為 Base64 字串傳回 (離開 Scope 後 tab 會自動被 Drop 釋放關閉)
-    let b64 = general_purpose::STANDARD.encode(pdf_bytes);
-    Ok(b64)
+    // 4. 如果出錯（例如 CDP websocket 中斷），重置背景 Edge 並重新連線再試一次
+    match result {
+        Ok(b64) => Ok(b64),
+        Err(err) => {
+            println!("[WARN] 常駐瀏覽器連線異常（將自動重新連線）: {}", err);
+            
+            // 釋放原有的瀏覽器實例，將其設為 None 進行重置
+            if let Ok(mut browser_guard) = state.browser.lock() {
+                if let Ok(mut tab_guard) = state.tab.lock() {
+                    *browser_guard = None;
+                    *tab_guard = None;
+                }
+            }
+            
+            // 重新發起第二次渲染嘗試 (此時會重新建立 Browser 與 Tab 實例)
+            try_pdf_render(&file_url, &state)
+                .map_err(|e| format!("重啟無頭瀏覽器後依然渲染失敗: {}", e))
+        }
+    }
 }
 
 #[tauri::command]
@@ -114,11 +221,77 @@ fn save_pdf_to_path(base64_data: String, file_path: String) -> Result<(), String
     Ok(())
 }
 
+#[tauri::command]
+fn parse_markdown(markdown: String) -> Result<String, String> {
+    use pulldown_cmark::{Parser, Options, html, Event, Tag};
+    use std::path::{Path, PathBuf};
+
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    options.insert(Options::ENABLE_FOOTNOTES);
+    options.insert(Options::ENABLE_STRIKETHROUGH);
+    options.insert(Options::ENABLE_TASKLISTS);
+    options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+
+    let parser = Parser::new_ext(&markdown, options);
+    let mut events = Vec::new();
+
+    for event in parser {
+        match event {
+            Event::Start(Tag::Image { link_type, dest_url, title, id }) => {
+                let dest_str = dest_url.to_string();
+                if !dest_str.starts_with("http://")
+                    && !dest_str.starts_with("https://")
+                    && !dest_str.starts_with("data:")
+                {
+                    let img_path = if Path::new(&dest_str).is_absolute() {
+                        PathBuf::from(&dest_str)
+                    } else {
+                        exe_dir.join(&dest_str)
+                    };
+
+                    if let Ok(img_data) = std::fs::read(&img_path) {
+                        let mime_type = match img_path.extension().and_then(|s| s.to_str()) {
+                            Some("png") | Some("PNG") => "image/png",
+                            Some("jpg") | Some("JPG") | Some("jpeg") | Some("JPEG") => "image/jpeg",
+                            Some("gif") | Some("GIF") => "image/gif",
+                            Some("svg") | Some("SVG") => "image/svg+xml",
+                            Some("webp") | Some("WEBP") => "image/webp",
+                            _ => "image/png",
+                        };
+                        let encoded = general_purpose::STANDARD.encode(img_data);
+                        let data_url = format!("data:{};base64,{}", mime_type, encoded);
+                        events.push(Event::Start(Tag::Image {
+                            link_type,
+                            dest_url: data_url.into(),
+                            title,
+                            id,
+                        }));
+                        continue;
+                    }
+                }
+                events.push(Event::Start(Tag::Image { link_type, dest_url, title, id }));
+            }
+            _ => events.push(event),
+        }
+    }
+
+    let mut html_output = String::new();
+    html::push_html(&mut html_output, events.into_iter());
+    Ok(html_output)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(ChromeBrowser {
             browser: Mutex::new(None),
+            tab: Mutex::new(None),
         })
         .plugin(tauri_plugin_dialog::init())
         // 設定日誌過濾，全域 Info 級別，過濾掉 headless_chrome 與 tungstenite 吵雜的底層日誌
@@ -129,7 +302,7 @@ pub fn run() {
                 .level_for("tungstenite", log::LevelFilter::Warn)
                 .build()
         )
-        .invoke_handler(tauri::generate_handler![generate_pdf, save_pdf_to_path])
+        .invoke_handler(tauri::generate_handler![generate_pdf, save_pdf_to_path, parse_markdown])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { marked } from 'marked';
 import { 
   FileText, 
   Code, 
@@ -44,11 +43,15 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // 3. 即時將 Markdown 編譯成 HTML (用於前端即時 HTML 預覽)
+  // 3. 即時將 Markdown 編譯成 HTML (用於前端即時 HTML 預覽，調用 Rust 後端以處理相對路徑圖片)
   useEffect(() => {
     const parseMd = async () => {
+      if (!markdown.trim()) {
+        setHtmlContent('');
+        return;
+      }
       try {
-        const parsed = await marked.parse(markdown);
+        const parsed = await invoke<string>('parse_markdown', { markdown });
         setHtmlContent(parsed);
       } catch (err) {
         console.error('Markdown 解析錯誤:', err);
@@ -208,21 +211,69 @@ function App() {
     <head>
       <meta charset="utf-8">
       <style>
-        /* 基礎 A4 紙張預設樣式 */
+        *, *::before, *::after {
+          box-sizing: border-box;
+        }
+
+        html {
+          background-color: #f8fafc;
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        ::-webkit-scrollbar {
+          display: none !important;
+        }
+
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
           margin: 0;
-          padding: 40px;
           line-height: 1.6;
-          background-color: #ffffff;
           color: #333333;
+          background-color: #ffffff;
+        }
+
+        @media screen {
+          html {
+            padding: 24px;
+            overflow-y: auto;
+          }
+          body {
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+          }
+        }
+
+        @media print {
+          body {
+            padding: 0;
+            margin: 0;
+          }
+        }
+        
+        img {
+          max-width: 100% !important;
+          height: auto !important;
+          box-sizing: border-box;
+          display: block;
         }
         
         .markdown-body {
           box-sizing: border-box;
-          min-width: 200px;
-          max-width: 980px;
-          margin: 0 auto;
+          width: 100%;
+        }
+        
+        pre, table {
+          max-width: 100%;
+          overflow-x: auto;
         }
         
         /* 預設的引用樣式，避免未設定時顯示異常 */
