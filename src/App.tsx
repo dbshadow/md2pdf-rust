@@ -38,6 +38,103 @@ function App() {
   
   const debounceTimerRef = useRef<any>(null);
 
+  // 雙向滾動同步所需的 refs 與 flags
+  const editorRef = useRef<any>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const isScrollingFromEditor = useRef<boolean>(false);
+  const isScrollingFromIframe = useRef<boolean>(false);
+  const editorScrollTimeout = useRef<any>(null);
+  const iframeScrollTimeout = useRef<any>(null);
+
+  // 監聽 Monaco 編輯器掛載與滾動
+  const handleEditorDidMount = (editor: any) => {
+    editorRef.current = editor;
+
+    editor.onDidScrollChange(() => {
+      // 如果這次滾動是由 iframe 滾動引起的，忽略它以避免 Feedback Loop
+      if (isScrollingFromIframe.current) return;
+
+      isScrollingFromEditor.current = true;
+      if (editorScrollTimeout.current) clearTimeout(editorScrollTimeout.current);
+      editorScrollTimeout.current = setTimeout(() => {
+        isScrollingFromEditor.current = false;
+      }, 150);
+
+      const iframe = iframeRef.current;
+      if (iframe && iframe.contentWindow) {
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          const html = doc.documentElement;
+          
+          const scrollTop = editor.getScrollTop();
+          const scrollHeight = editor.getScrollHeight();
+          const clientHeight = editor.getLayoutInfo().height;
+          const maxEditorScroll = scrollHeight - clientHeight;
+          const percentage = maxEditorScroll > 0 ? scrollTop / maxEditorScroll : 0;
+          
+          const maxIframeScroll = html.scrollHeight - html.clientHeight;
+          iframe.contentWindow.scrollTo(0, maxIframeScroll * percentage);
+        } catch (err) {
+          console.warn("Monaco to Iframe scroll sync failed:", err);
+        }
+      }
+    });
+  };
+
+  // 每次 Iframe 載入完成時，同步一次當前編輯器的滾動位置，防止位置錯亂
+  const handleIframeLoad = () => {
+    const iframe = iframeRef.current;
+    if (iframe && iframe.contentWindow) {
+      try {
+        const editor = editorRef.current;
+        if (editor) {
+          const scrollTop = editor.getScrollTop();
+          const scrollHeight = editor.getScrollHeight();
+          const clientHeight = editor.getLayoutInfo().height;
+          const maxEditorScroll = scrollHeight - clientHeight;
+          const percentage = maxEditorScroll > 0 ? scrollTop / maxEditorScroll : 0;
+          
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          const html = doc.documentElement;
+          const maxIframeScroll = html.scrollHeight - html.clientHeight;
+          iframe.contentWindow.scrollTo(0, maxIframeScroll * percentage);
+        }
+      } catch (e) {
+        console.warn("Failed to sync scroll on iframe load:", e);
+      }
+    }
+  };
+
+  // 雙向滾動同步：在 window 上掛載接收 iframe 滾動回報的函數
+  useEffect(() => {
+    (window as any).syncIframeScroll = (percentage: number) => {
+      // 避免死循環
+      if (isScrollingFromEditor.current) return;
+
+      isScrollingFromIframe.current = true;
+      if (iframeScrollTimeout.current) clearTimeout(iframeScrollTimeout.current);
+      iframeScrollTimeout.current = setTimeout(() => {
+        isScrollingFromIframe.current = false;
+      }, 150);
+
+      const editor = editorRef.current;
+      if (editor) {
+        try {
+          const scrollHeight = editor.getScrollHeight();
+          const clientHeight = editor.getLayoutInfo().height;
+          const targetScrollTop = (scrollHeight - clientHeight) * percentage;
+          editor.setScrollTop(targetScrollTop);
+        } catch (e) {
+          console.warn("Sync scroll to Monaco failed:", e);
+        }
+      }
+    };
+
+    return () => {
+      delete (window as any).syncIframeScroll;
+    };
+  }, []);
+
   // 2. 監聽主題變更
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -219,9 +316,6 @@ function App() {
           background-color: #f8fafc;
           margin: 0;
           padding: 0;
-          height: 100%;
-          -ms-overflow-style: none;
-          scrollbar-width: none;
         }
 
         ::-webkit-scrollbar {
@@ -238,8 +332,7 @@ function App() {
 
         @media screen {
           html {
-            padding: 24px;
-            overflow-y: auto;
+            padding: 24px 0;
           }
           body {
             max-width: 210mm;
@@ -345,15 +438,27 @@ function App() {
         ${htmlContent}
       </div>
       <script>
-        // 監聽滾動事件，即時存入 localStorage
+        // 監聽滾動事件，即時存入 localStorage 並同步到父視窗
         window.addEventListener('scroll', () => {
+          console.log("[DEBUG] Iframe window scrolled. Y:", window.scrollY);
           localStorage.setItem('html_preview_scroll', window.scrollY);
+          
+          if (window.parent && window.parent.syncIframeScroll) {
+            const maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const percentage = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+            console.log("[DEBUG] Iframe reporting scroll to parent window. Percentage:", percentage);
+            window.parent.syncIframeScroll(percentage);
+          } else {
+            console.warn("[DEBUG] Iframe sync failed: window.parent.syncIframeScroll is undefined", window.parent);
+          }
         });
         
         // 載入完成後還原滾動高度
         window.addEventListener('DOMContentLoaded', () => {
+          console.log("[DEBUG] Iframe DOMContentLoaded triggered.");
           const saved = localStorage.getItem('html_preview_scroll');
           if (saved) {
+            console.log("[DEBUG] Iframe restoring scroll position to:", saved);
             window.scrollTo(0, parseInt(saved, 10));
           }
         });
@@ -448,6 +553,7 @@ function App() {
                 theme={theme === 'dark' ? 'vs-dark' : 'light'}
                 value={markdown}
                 onChange={(val) => setMarkdown(val || '')}
+                onMount={handleEditorDidMount}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
@@ -560,6 +666,8 @@ function App() {
               /* HTML 即時預覽模式 */
               <div className="pdf-container" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                 <iframe 
+                  ref={iframeRef}
+                  onLoad={handleIframeLoad}
                   srcDoc={iframeSrcDoc} 
                   className="pdf-iframe"
                   style={{ backgroundColor: '#ffffff', width: '100%', height: '100%' }}

@@ -138,6 +138,9 @@ fn try_pdf_render(file_url: &str, state: &tauri::State<'_, ChromeBrowser>) -> Re
     
     let tab = tab_guard.as_ref().unwrap();
 
+    // 設定較短的預設超時時間（例如 3 秒），避免無頭瀏覽器連線斷開或卡死時無響應
+    tab.set_default_timeout(std::time::Duration::from_secs(3));
+
     // 在分頁中載入網頁
     tab.navigate_to(file_url)
         .map_err(|e| format!("載入頁面失敗: {}", e))?;
@@ -158,6 +161,28 @@ fn try_pdf_render(file_url: &str, state: &tauri::State<'_, ChromeBrowser>) -> Re
 
     let b64 = general_purpose::STANDARD.encode(pdf_bytes);
     Ok(b64)
+}
+
+// 強制終止指定 PID 的進程及其所有子進程（進程樹）
+fn kill_process_tree(pid: u32) {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        // 在 Windows 上使用 taskkill /F /T /PID 來終止整個進程樹
+        let _ = Command::new("taskkill")
+            .args(&["/F", "/T", "/PID", &pid.to_string()])
+            .spawn()
+            .and_then(|mut child| child.wait());
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        use std::process::Command;
+        // 在 Linux / macOS 上發送 SIGKILL (-9)
+        let _ = Command::new("kill")
+            .args(&["-9", &pid.to_string()])
+            .spawn()
+            .and_then(|mut child| child.wait());
+    }
 }
 
 #[tauri::command]
@@ -191,6 +216,16 @@ fn generate_pdf(
         Err(err) => {
             println!("[WARN] 常駐瀏覽器連線異常（將自動重新連線）: {}", err);
             
+            // 在重置前，主動把原來的 Edge 進程樹強制殺掉，防止其殘留成孤兒進程
+            if let Ok(browser_guard) = state.browser.lock() {
+                if let Some(ref browser) = *browser_guard {
+                    if let Some(pid) = browser.get_process_id() {
+                        println!("[INFO] 正在強制終止殘留的 Edge 進程樹 (PID: {})", pid);
+                        kill_process_tree(pid);
+                    }
+                }
+            }
+
             // 釋放原有的瀏覽器實例，將其設為 None 進行重置
             if let Ok(mut browser_guard) = state.browser.lock() {
                 if let Ok(mut tab_guard) = state.tab.lock() {
