@@ -11,7 +11,7 @@ pub struct ChromeBrowser {
     pub tab: Mutex<Option<Arc<Tab>>>,
 }
 
-fn markdown_to_html_with_css(markdown: &str, css: &str) -> String {
+fn markdown_to_html_with_css(markdown: &str, css: &str, base_dir: Option<&str>) -> String {
     use pulldown_cmark::{Parser, Options, html, Event, Tag};
     use std::path::{Path, PathBuf};
 
@@ -38,14 +38,36 @@ fn markdown_to_html_with_css(markdown: &str, css: &str) -> String {
                     && !dest_str.starts_with("https://")
                     && !dest_str.starts_with("data:")
                 {
-                    let img_path = if Path::new(&dest_str).is_absolute() {
-                        PathBuf::from(&dest_str)
-                    } else {
-                        exe_dir.join(&dest_str)
-                    };
+                    let mut img_data_opt = None;
+                    let mut final_img_path = PathBuf::new();
 
-                    if let Ok(img_data) = std::fs::read(&img_path) {
-                        let mime_type = match img_path.extension().and_then(|s| s.to_str()) {
+                    if Path::new(&dest_str).is_absolute() {
+                        let p = PathBuf::from(&dest_str);
+                        if let Ok(data) = std::fs::read(&p) {
+                            img_data_opt = Some(data);
+                            final_img_path = p;
+                        }
+                    } else {
+                        // 1. 優先嘗試 base_dir
+                        if let Some(dir) = base_dir {
+                            let p = Path::new(dir).join(&dest_str);
+                            if let Ok(data) = std::fs::read(&p) {
+                                img_data_opt = Some(data);
+                                final_img_path = p;
+                            }
+                        }
+                        // 2. 如果 base_dir 沒讀到，嘗試 exe_dir
+                        if img_data_opt.is_none() {
+                            let p = exe_dir.join(&dest_str);
+                            if let Ok(data) = std::fs::read(&p) {
+                                img_data_opt = Some(data);
+                                final_img_path = p;
+                            }
+                        }
+                    }
+
+                    if let Some(img_data) = img_data_opt {
+                        let mime_type = match final_img_path.extension().and_then(|s| s.to_str()) {
                             Some("png") | Some("PNG") => "image/png",
                             Some("jpg") | Some("JPG") | Some("jpeg") | Some("JPEG") => "image/jpeg",
                             Some("gif") | Some("GIF") => "image/gif",
@@ -189,10 +211,11 @@ fn kill_process_tree(pid: u32) {
 fn generate_pdf(
     markdown: String,
     css: String,
+    base_dir: Option<String>,
     state: tauri::State<'_, ChromeBrowser>,
 ) -> Result<String, String> {
     // 1. 將 Markdown 轉為 HTML ＋ CSS
-    let html_content = markdown_to_html_with_css(&markdown, &css);
+    let html_content = markdown_to_html_with_css(&markdown, &css, base_dir.as_deref());
 
     // 2. 建立臨時 HTML 檔案
     let mut temp_file = Builder::new()
@@ -257,7 +280,19 @@ fn save_pdf_to_path(base64_data: String, file_path: String) -> Result<(), String
 }
 
 #[tauri::command]
-fn parse_markdown(markdown: String) -> Result<String, String> {
+fn read_text_file(file_path: String) -> Result<String, String> {
+    std::fs::read_to_string(&file_path)
+        .map_err(|e| format!("讀取檔案失敗: {}", e))
+}
+
+#[tauri::command]
+fn write_text_file(file_path: String, content: String) -> Result<(), String> {
+    std::fs::write(&file_path, content)
+        .map_err(|e| format!("寫入檔案失敗: {}", e))
+}
+
+#[tauri::command]
+fn parse_markdown(markdown: String, base_dir: Option<String>) -> Result<String, String> {
     use pulldown_cmark::{Parser, Options, html, Event, Tag};
     use std::path::{Path, PathBuf};
 
@@ -284,14 +319,36 @@ fn parse_markdown(markdown: String) -> Result<String, String> {
                     && !dest_str.starts_with("https://")
                     && !dest_str.starts_with("data:")
                 {
-                    let img_path = if Path::new(&dest_str).is_absolute() {
-                        PathBuf::from(&dest_str)
-                    } else {
-                        exe_dir.join(&dest_str)
-                    };
+                    let mut img_data_opt = None;
+                    let mut final_img_path = PathBuf::new();
 
-                    if let Ok(img_data) = std::fs::read(&img_path) {
-                        let mime_type = match img_path.extension().and_then(|s| s.to_str()) {
+                    if Path::new(&dest_str).is_absolute() {
+                        let p = PathBuf::from(&dest_str);
+                        if let Ok(data) = std::fs::read(&p) {
+                            img_data_opt = Some(data);
+                            final_img_path = p;
+                        }
+                    } else {
+                        // 1. 優先嘗試 base_dir
+                        if let Some(ref dir) = base_dir {
+                            let p = Path::new(dir).join(&dest_str);
+                            if let Ok(data) = std::fs::read(&p) {
+                                img_data_opt = Some(data);
+                                final_img_path = p;
+                            }
+                        }
+                        // 2. 如果 base_dir 沒讀到，嘗試 exe_dir
+                        if img_data_opt.is_none() {
+                            let p = exe_dir.join(&dest_str);
+                            if let Ok(data) = std::fs::read(&p) {
+                                img_data_opt = Some(data);
+                                final_img_path = p;
+                            }
+                        }
+                    }
+
+                    if let Some(img_data) = img_data_opt {
+                        let mime_type = match final_img_path.extension().and_then(|s| s.to_str()) {
                             Some("png") | Some("PNG") => "image/png",
                             Some("jpg") | Some("JPG") | Some("jpeg") | Some("JPEG") => "image/jpeg",
                             Some("gif") | Some("GIF") => "image/gif",
@@ -337,7 +394,13 @@ pub fn run() {
                 .level_for("tungstenite", log::LevelFilter::Warn)
                 .build()
         )
-        .invoke_handler(tauri::generate_handler![generate_pdf, save_pdf_to_path, parse_markdown])
+        .invoke_handler(tauri::generate_handler![
+            generate_pdf,
+            save_pdf_to_path,
+            parse_markdown,
+            read_text_file,
+            write_text_file
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -11,11 +11,13 @@ import {
   Check, 
   AlertCircle,
   FileCode2,
-  FileDown
+  FileDown,
+  FolderOpen,
+  Save
 } from 'lucide-react';
 import { PRESET_TEMPLATES } from './templates';
 import { invoke } from '@tauri-apps/api/core';
-import { save } from '@tauri-apps/plugin-dialog';
+import { open, save, ask } from '@tauri-apps/plugin-dialog';
 
 function App() {
   // 1. 初始化狀態 - 預設載入 Resume 模板
@@ -23,6 +25,8 @@ function App() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(defaultTemplate.id);
   const [markdown, setMarkdown] = useState<string>(defaultTemplate.defaultMarkdown);
   const [css, setCss] = useState<string>(defaultTemplate.defaultCss);
+  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState<boolean>(false);
   
   const [activeTab, setActiveTab] = useState<'markdown' | 'css'>('markdown');
   const [previewMode, setPreviewMode] = useState<'html' | 'pdf'>('html'); // 'html' (即時) | 'pdf' (真實分頁)
@@ -140,6 +144,109 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // 取得基準目錄
+  const getBaseDir = (filePath: string | null): string | undefined => {
+    if (!filePath) return undefined;
+    const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+    if (lastSlash === -1) return undefined;
+    return filePath.substring(0, lastSlash);
+  };
+
+  // 放棄變更確認
+  const confirmDiscard = async (): Promise<boolean> => {
+    if (!isDirty) return true;
+    try {
+      const confirmed = await ask(
+        '當前檔案有未儲存的變更，是否放棄這些變更？',
+        { title: '放棄變更？', kind: 'warning' }
+      );
+      return confirmed;
+    } catch (e) {
+      return window.confirm('當前檔案有未儲存的變更，是否放棄這些變更？');
+    }
+  };
+
+  // 開啟檔案
+  const handleOpenFile = async () => {
+    if (!(await confirmDiscard())) return;
+
+    try {
+      const selected = await open({
+        filters: [{
+          name: 'Markdown 檔案',
+          extensions: ['md', 'markdown']
+        }]
+      });
+
+      if (selected && typeof selected === 'string') {
+        setIsLoading(true);
+        const content = await invoke<string>('read_text_file', { filePath: selected });
+        setMarkdown(content);
+        setCurrentFilePath(selected);
+        setIsDirty(false);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err?.message || String(err) || '開啟檔案失敗');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 儲存檔案
+  const handleSaveFile = async () => {
+    if (!currentFilePath) {
+      await handleSaveFileAs();
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await invoke('write_text_file', {
+        filePath: currentFilePath,
+        content: markdown
+      });
+      setIsDirty(false);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err?.message || String(err) || '儲存檔案失敗');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 另存新檔
+  const handleSaveFileAs = async () => {
+    try {
+      const defaultFilename = currentFilePath 
+        ? currentFilePath.substring(Math.max(currentFilePath.lastIndexOf('/'), currentFilePath.lastIndexOf('\\')) + 1)
+        : 'untitled.md';
+
+      const filePath = await save({
+        filters: [{
+          name: 'Markdown 檔案',
+          extensions: ['md', 'markdown']
+        }],
+        defaultPath: defaultFilename
+      });
+
+      if (filePath) {
+        setIsLoading(true);
+        await invoke('write_text_file', {
+          filePath: filePath,
+          content: markdown
+        });
+        setCurrentFilePath(filePath);
+        setIsDirty(false);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err?.message || String(err) || '另存新檔失敗');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 3. 即時將 Markdown 編譯成 HTML (用於前端即時 HTML 預覽，調用 Rust 後端以處理相對路徑圖片)
   useEffect(() => {
     const parseMd = async () => {
@@ -148,30 +255,40 @@ function App() {
         return;
       }
       try {
-        const parsed = await invoke<string>('parse_markdown', { markdown });
+        const parsed = await invoke<string>('parse_markdown', { 
+          markdown,
+          baseDir: getBaseDir(currentFilePath)
+        });
         setHtmlContent(parsed);
       } catch (err) {
         console.error('Markdown 解析錯誤:', err);
       }
     };
     parseMd();
-  }, [markdown]);
+  }, [markdown, currentFilePath]);
 
   // 4. 當模板變更時，重設編輯器內容
-  const handleTemplateChange = (templateId: string) => {
+  const handleTemplateChange = async (templateId: string) => {
+    if (!(await confirmDiscard())) return;
     const template = PRESET_TEMPLATES.find(t => t.id === templateId);
     if (template) {
       setSelectedTemplateId(templateId);
+      setMarkdown(template.defaultMarkdown);
       setCss(template.defaultCss);
+      setCurrentFilePath(null);
+      setIsDirty(false);
     }
   };
 
   // 5. 重置為目前模板的預設值
-  const handleResetToTemplate = () => {
+  const handleResetToTemplate = async () => {
+    if (!(await confirmDiscard())) return;
     const template = PRESET_TEMPLATES.find(t => t.id === selectedTemplateId);
     if (template) {
       setMarkdown(template.defaultMarkdown);
       setCss(template.defaultCss);
+      setCurrentFilePath(null);
+      setIsDirty(false);
     }
   };
 
@@ -191,7 +308,8 @@ function App() {
     try {
       const base64Data = await invoke<string>('generate_pdf', {
         markdown: currentMd,
-        css: currentCss
+        css: currentCss,
+        baseDir: getBaseDir(currentFilePath)
       });
       
       // 將 base64 轉為 Blob
@@ -299,6 +417,36 @@ function App() {
       }
     }
   };
+
+  // 8.1 註冊鍵盤快捷鍵 (Ctrl+O, Ctrl+S, Ctrl+Shift+S)
+  const keyActionsRef = useRef({ handleOpenFile, handleSaveFile, handleSaveFileAs });
+  useEffect(() => {
+    keyActionsRef.current = { handleOpenFile, handleSaveFile, handleSaveFileAs };
+  });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+      if (isCmdOrCtrl) {
+        if (e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            keyActionsRef.current.handleSaveFileAs();
+          } else {
+            keyActionsRef.current.handleSaveFile();
+          }
+        } else if (e.key.toLowerCase() === 'o') {
+          e.preventDefault();
+          keyActionsRef.current.handleOpenFile();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // 9. 組裝 HTML 即時預覽的 Iframe srcdoc 內容
   // 這將 CSS 限制在 iframe 中，不影響整個應用的 UI，且更新時不丟失滾動位置
@@ -475,10 +623,57 @@ function App() {
           <span className="logo-icon">
             <FileCode2 size={26} strokeWidth={2.5} />
           </span>
-          <h1>Markdown to PDF</h1>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <h1 style={{ margin: 0, fontSize: '15px', lineHeight: '1.2' }}>Markdown to PDF</h1>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+              {currentFilePath ? (
+                <span>
+                  {currentFilePath.substring(Math.max(currentFilePath.lastIndexOf('/'), currentFilePath.lastIndexOf('\\')) + 1)}
+                  {isDirty && <span style={{ color: '#ef4444', marginLeft: '2px', fontWeight: 'bold' }}>*</span>}
+                </span>
+              ) : (
+                <span>
+                  未命名草稿
+                  {isDirty && <span style={{ color: '#ef4444', marginLeft: '2px', fontWeight: 'bold' }}>*</span>}
+                </span>
+              )}
+            </span>
+          </div>
         </div>
         
         <div className="controls-section">
+          {/* 開啟檔案 */}
+          <button 
+            className="action-btn" 
+            onClick={handleOpenFile}
+            title="開啟本地 Markdown 檔案 (Ctrl+O)"
+          >
+            <FolderOpen size={14} />
+            開啟檔案
+          </button>
+
+          {/* 儲存檔案 */}
+          <button 
+            className="action-btn" 
+            onClick={handleSaveFile}
+            title="儲存檔案變更 (Ctrl+S)"
+          >
+            <Save size={14} />
+            儲存檔案
+          </button>
+
+          {/* 另存新檔 */}
+          <button 
+            className="action-btn" 
+            onClick={handleSaveFileAs}
+            title="另存為新的 Markdown 檔案 (Ctrl+Shift+S)"
+          >
+            <Save size={14} />
+            另存新檔
+          </button>
+
+          <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-color)', margin: '0 8px' }}></div>
+
           {/* 模板選擇 */}
           <select 
             className="select-theme-btn" 
@@ -552,7 +747,10 @@ function App() {
                 language="markdown"
                 theme={theme === 'dark' ? 'vs-dark' : 'light'}
                 value={markdown}
-                onChange={(val) => setMarkdown(val || '')}
+                onChange={(val) => {
+                  setMarkdown(val || '');
+                  setIsDirty(true);
+                }}
                 onMount={handleEditorDidMount}
                 options={{
                   minimap: { enabled: false },
@@ -570,7 +768,10 @@ function App() {
                 language="css"
                 theme={theme === 'dark' ? 'vs-dark' : 'light'}
                 value={css}
-                onChange={(val) => setCss(val || '')}
+                onChange={(val) => {
+                  setCss(val || '');
+                  setIsDirty(true);
+                }}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
