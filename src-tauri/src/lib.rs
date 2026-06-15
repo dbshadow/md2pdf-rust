@@ -96,7 +96,7 @@ fn markdown_to_html_with_css(markdown: &str, css: &str, base_dir: Option<&str>) 
     html::push_html(&mut html_output, events.into_iter());
 
     format!(
-        r#"<!DOCTYPE html>
+        r##"<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -127,11 +127,111 @@ pre, table {{
 }}
 {}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
 <body>
 {}
+<script>
+  window.mermaidRendered = false;
+  document.addEventListener("DOMContentLoaded", function() {{
+    var codeNodes = document.querySelectorAll("pre code.language-mermaid");
+    if (codeNodes.length > 0 && typeof mermaid !== 'undefined') {{
+      codeNodes.forEach(function(codeNode) {{
+        var preNode = codeNode.parentNode;
+        var div = document.createElement("pre");
+        div.className = "mermaid";
+        div.style.whiteSpace = "pre";
+        div.style.backgroundColor = "transparent";
+        div.style.border = "none";
+        div.style.padding = "0";
+        div.style.margin = "20px 0";
+        div.style.display = "flex";
+        div.style.justifyContent = "center";
+        div.style.alignItems = "center";
+        div.style.width = "100%";
+        div.textContent = codeNode.textContent;
+        preNode.parentNode.replaceChild(div, preNode);
+      }});
+      try {{
+        // 1. 動態讀取當前套用範本的 CSS 樣式，實現完美配色自適應
+        var primaryTextColor = "#333333";
+        var primaryBorderColor = "#cbd5e1";
+        var lineColor = "#64748b";
+        var fontFamily = "system-ui, -apple-system, sans-serif";
+
+        try {{
+          var bodyStyle = window.getComputedStyle(document.body);
+          primaryTextColor = bodyStyle.color || primaryTextColor;
+          fontFamily = bodyStyle.fontFamily || fontFamily;
+
+          var h2 = document.querySelector("h2");
+          if (h2) {{
+            var h2Style = window.getComputedStyle(h2);
+            var h2Color = h2Style.color;
+            var borderBottom = h2Style.borderBottomColor;
+            
+            if (h2Style.borderBottomWidth !== "0px" && borderBottom && borderBottom !== "rgba(0, 0, 0, 0)" && borderBottom !== "transparent") {{
+              primaryBorderColor = borderBottom;
+            }} else {{
+              primaryBorderColor = h2Color || primaryBorderColor;
+            }}
+            lineColor = h2Color || lineColor;
+          }} else {{
+            var h1 = document.querySelector("h1") || document.querySelector("h3");
+            if (h1) {{
+              var h1Style = window.getComputedStyle(h1);
+              primaryBorderColor = h1Style.color || primaryBorderColor;
+              lineColor = h1Style.color || lineColor;
+            }}
+          }}
+        }} catch (e) {{}}
+
+        mermaid.initialize({{
+          startOnLoad: false,
+          theme: 'base',
+          themeVariables: {{
+            fontFamily: fontFamily,
+            fontSize: '13px',
+            primaryColor: '#ffffff',
+            primaryTextColor: primaryTextColor,
+            primaryBorderColor: primaryBorderColor,
+            lineColor: lineColor,
+            secondaryColor: '#f8fafc',
+            tertiaryColor: '#f8fafc',
+            mainBkg: '#ffffff',
+            nodeBorder: primaryBorderColor,
+            actorBkg: '#ffffff',
+            actorBorder: primaryBorderColor,
+            actorTextColor: primaryTextColor,
+            signalColor: lineColor,
+            signalTextColor: primaryTextColor,
+            labelBoxBkgColor: '#ffffff',
+            labelBoxBorderColor: primaryBorderColor,
+            labelTextColor: primaryTextColor,
+            loopLimitEvt: '#ffffff',
+            noteBkgColor: '#ffffff',
+            noteBorderColor: primaryBorderColor
+          }}
+        }});
+        mermaid.run({{ querySelector: '.mermaid' }})
+          .then(function() {{
+            window.mermaidRendered = true;
+          }})
+          .catch(function(err) {{
+            console.error("Mermaid run failed:", err);
+            window.mermaidRendered = true;
+          }});
+      }} catch(e) {{
+        console.error("Mermaid init failed:", e);
+        window.mermaidRendered = true;
+      }}
+    }} else {{
+      window.mermaidRendered = true;
+    }}
+  }});
+</script>
 </body>
-</html>"#,
+</html>"##,
         css, html_output
     )
 }
@@ -169,6 +269,21 @@ fn try_pdf_render(file_url: &str, state: &tauri::State<'_, ChromeBrowser>) -> Re
     
     tab.wait_until_navigated()
         .map_err(|e| format!("載入頁面超時: {}", e))?;
+
+    // 輪詢等待 window.mermaidRendered 變為 true（最多等待 2 秒，每 50ms 檢查一次）
+    let mut rendered = false;
+    for _ in 0..40 {
+        if let Ok(eval_res) = tab.evaluate("typeof window !== 'undefined' && window.mermaidRendered === true", false) {
+            if let Some(true) = eval_res.value.as_ref().and_then(|v| v.as_bool()) {
+                rendered = true;
+                break;
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    if !rendered {
+        println!("[WARN] Mermaid 渲染超時或未正確標記 window.mermaidRendered = true。");
+    }
 
     // 配置 PDF 列印參數，啟用 prefer_css_page_size
     let pdf_options = PrintToPdfOptions {
@@ -375,6 +490,7 @@ fn parse_markdown(markdown: String, base_dir: Option<String>) -> Result<String, 
 
     let mut html_output = String::new();
     html::push_html(&mut html_output, events.into_iter());
+    println!("[DEBUG] parse_markdown HTML output: {}", html_output);
     Ok(html_output)
 }
 

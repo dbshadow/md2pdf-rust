@@ -580,6 +580,7 @@ function App() {
         
         ${css}
       </style>
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     </head>
     <body>
       <div class="markdown-body">
@@ -601,13 +602,140 @@ function App() {
           }
         });
         
-        // 載入完成後還原滾動高度
+        // 載入完成後還原滾動高度與執行 Mermaid 渲染
         window.addEventListener('DOMContentLoaded', () => {
           console.log("[DEBUG] Iframe DOMContentLoaded triggered.");
           const saved = localStorage.getItem('html_preview_scroll');
           if (saved) {
             console.log("[DEBUG] Iframe restoring scroll position to:", saved);
             window.scrollTo(0, parseInt(saved, 10));
+          }
+
+          // 執行 Mermaid 渲染
+          window.mermaidRendered = false;
+          const codeNodes = document.querySelectorAll("pre code.language-mermaid");
+          console.log("[DEBUG] Found language-mermaid nodes count:", codeNodes.length);
+          if (codeNodes.length > 0) {
+            if (typeof mermaid === 'undefined') {
+              console.error("[DEBUG] Mermaid object is undefined inside iframe.");
+              // 在網頁上建立顯眼的提示，告訴使用者 CDN 載入失敗
+              codeNodes.forEach((node) => {
+                const preNode = node.parentNode;
+                const errDiv = document.createElement("div");
+                errDiv.style.color = "orange";
+                errDiv.style.border = "1px solid orange";
+                errDiv.style.padding = "10px";
+                errDiv.style.margin = "10px 0";
+                errDiv.textContent = "警告: 檢測到 Mermaid 代碼塊，但 Mermaid.js 庫未加載（請檢查網路連線或 CDN 存取）";
+                preNode.parentNode.insertBefore(errDiv, preNode);
+              });
+              window.mermaidRendered = true;
+              return;
+            }
+            codeNodes.forEach((codeNode) => {
+              const preNode = codeNode.parentNode;
+              const div = document.createElement("pre");
+              div.className = "mermaid";
+              div.style.whiteSpace = "pre";
+              div.style.backgroundColor = "transparent";
+              div.style.border = "none";
+              div.style.padding = "0";
+              div.style.margin = "20px 0";
+              div.style.display = "flex";
+              div.style.justifyContent = "center";
+              div.style.alignItems = "center";
+              div.style.width = "100%";
+              div.textContent = codeNode.textContent;
+              preNode.parentNode.replaceChild(div, preNode);
+            });
+            try {
+              console.log("[DEBUG] Initializing and running mermaid...");
+              
+              // 1. 動態讀取當前套用範本的 CSS 樣式，實現完美配色自適應
+              let primaryTextColor = "#333333";
+              let primaryBorderColor = "#cbd5e1";
+              let lineColor = "#64748b";
+              let fontFamily = "system-ui, -apple-system, sans-serif";
+
+              try {
+                const bodyStyle = window.getComputedStyle(document.body);
+                primaryTextColor = bodyStyle.color || primaryTextColor;
+                fontFamily = bodyStyle.fontFamily || fontFamily;
+
+                const h2 = document.querySelector("h2");
+                if (h2) {
+                  const h2Style = window.getComputedStyle(h2);
+                  const h2Color = h2Style.color;
+                  const borderBottom = h2Style.borderBottomColor;
+                  
+                  // 優先使用 h2 的 border-bottom 顏色（例如 Tiffany 的蒂芬妮綠），否則使用 h2 文字色
+                  if (h2Style.borderBottomWidth !== "0px" && borderBottom && borderBottom !== "rgba(0, 0, 0, 0)" && borderBottom !== "transparent") {
+                    primaryBorderColor = borderBottom;
+                  } else {
+                    primaryBorderColor = h2Color || primaryBorderColor;
+                  }
+                  lineColor = h2Color || lineColor;
+                } else {
+                  const h1 = document.querySelector("h1") || document.querySelector("h3");
+                  if (h1) {
+                    const h1Style = window.getComputedStyle(h1);
+                    primaryBorderColor = h1Style.color || primaryBorderColor;
+                    lineColor = h1Style.color || lineColor;
+                  }
+                }
+              } catch (e) {
+                console.warn("[DEBUG] Failed to compute theme styles, using default colors:", e);
+              }
+
+              mermaid.initialize({
+                startOnLoad: false,
+                theme: 'base',
+                themeVariables: {
+                  fontFamily: fontFamily,
+                  fontSize: '13px',
+                  primaryColor: '#ffffff',
+                  primaryTextColor: primaryTextColor,
+                  primaryBorderColor: primaryBorderColor,
+                  lineColor: lineColor,
+                  secondaryColor: '#f8fafc',
+                  tertiaryColor: '#f8fafc',
+                  mainBkg: '#ffffff',
+                  nodeBorder: primaryBorderColor,
+                  actorBkg: '#ffffff',
+                  actorBorder: primaryBorderColor,
+                  actorTextColor: primaryTextColor,
+                  signalColor: lineColor,
+                  signalTextColor: primaryTextColor,
+                  labelBoxBkgColor: '#ffffff',
+                  labelBoxBorderColor: primaryBorderColor,
+                  labelTextColor: primaryTextColor,
+                  loopLimitEvt: '#ffffff',
+                  noteBkgColor: '#ffffff',
+                  noteBorderColor: primaryBorderColor
+                }
+              });
+              mermaid.run({ querySelector: '.mermaid' })
+                .then(() => {
+                  console.log("[DEBUG] Mermaid render succeeded.");
+                  window.mermaidRendered = true;
+                })
+                .catch((err) => {
+                  console.error("[DEBUG] Mermaid run promise failed:", err);
+                  document.querySelectorAll(".mermaid").forEach((el) => {
+                    el.style.color = "red";
+                    el.style.border = "1px solid red";
+                    el.style.padding = "10px";
+                    el.style.margin = "10px 0";
+                    el.textContent = "Mermaid 渲染失敗: " + err;
+                  });
+                  window.mermaidRendered = true;
+                });
+            } catch (e) {
+              console.error("[DEBUG] Mermaid initialization sync exception:", e);
+              window.mermaidRendered = true;
+            }
+          } else {
+            window.mermaidRendered = true;
           }
         });
       </script>
