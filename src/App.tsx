@@ -14,7 +14,9 @@ import {
   FileDown,
   FolderOpen,
   Save,
-  GitCompare
+  GitCompare,
+  FilePlus,
+  Trash2
 } from 'lucide-react';
 import { PRESET_TEMPLATES } from './templates';
 import { invoke } from '@tauri-apps/api/core';
@@ -33,6 +35,64 @@ function App() {
   const [leftWidth, setLeftWidth] = useState<number>(50); // 左側寬度百分比
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const [customTemplates, setCustomTemplates] = useState<any[]>(() => {
+    const saved = localStorage.getItem('custom_templates');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // 儲存為自訂範本
+  const handleSaveAsCustomTemplate = () => {
+    const name = window.prompt('請輸入自訂範本的名稱：', '我的自訂範本');
+    if (name === null) return; // 使用者按取消
+    
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      alert('範本名稱不能為空！');
+      return;
+    }
+
+    const newTemplate = {
+      id: `custom_${Date.now()}`,
+      name: `[自訂] ${trimmedName}`,
+      defaultMarkdown: markdown,
+      defaultCss: css
+    };
+
+    const updated = [...customTemplates, newTemplate];
+    setCustomTemplates(updated);
+    localStorage.setItem('custom_templates', JSON.stringify(updated));
+    setSelectedTemplateId(newTemplate.id);
+    setIsDirty(false);
+  };
+
+  // 刪除自訂範本
+  const handleDeleteCustomTemplate = async () => {
+    const activeTemplate = customTemplates.find(t => t.id === selectedTemplateId);
+    if (!activeTemplate) return;
+
+    try {
+      const confirmed = await ask(
+        `確定要刪除自訂範本「${activeTemplate.name}」嗎？`,
+        { title: '刪除自訂範本？', kind: 'warning' }
+      );
+      if (!confirmed) return;
+    } catch (e) {
+      if (!window.confirm(`確定要刪除自訂範本「${activeTemplate.name}」嗎？`)) return;
+    }
+
+    const updated = customTemplates.filter(t => t.id !== selectedTemplateId);
+    setCustomTemplates(updated);
+    localStorage.setItem('custom_templates', JSON.stringify(updated));
+    
+    // 切換回預設 Resume 範本
+    setSelectedTemplateId(defaultTemplate.id);
+    setMarkdown(defaultTemplate.defaultMarkdown);
+    setOriginalMarkdown(defaultTemplate.defaultMarkdown);
+    setCss(defaultTemplate.defaultCss);
+    setCurrentFilePath(null);
+    setIsDirty(false);
+  };
 
   // 處理水平拖曳調整視窗比例
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -332,7 +392,8 @@ function App() {
   // 4. 當模板變更時，重設編輯器內容
   const handleTemplateChange = async (templateId: string) => {
     if (!(await confirmDiscard())) return;
-    const template = PRESET_TEMPLATES.find(t => t.id === templateId);
+    const allTemplates = [...PRESET_TEMPLATES, ...customTemplates];
+    const template = allTemplates.find(t => t.id === templateId);
     if (template) {
       setSelectedTemplateId(templateId);
       setMarkdown(template.defaultMarkdown);
@@ -346,7 +407,8 @@ function App() {
   // 5. 重置為目前模板的預設值
   const handleResetToTemplate = async () => {
     if (!(await confirmDiscard())) return;
-    const template = PRESET_TEMPLATES.find(t => t.id === selectedTemplateId);
+    const allTemplates = [...PRESET_TEMPLATES, ...customTemplates];
+    const template = allTemplates.find(t => t.id === selectedTemplateId);
     if (template) {
       setMarkdown(template.defaultMarkdown);
       setOriginalMarkdown(template.defaultMarkdown);
@@ -872,10 +934,33 @@ function App() {
             value={selectedTemplateId} 
             onChange={(e) => handleTemplateChange(e.target.value)}
           >
-            {PRESET_TEMPLATES.map((t) => (
+            {[...PRESET_TEMPLATES, ...customTemplates].map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
+
+          {/* 儲存為範本 */}
+          <button 
+            className="action-btn" 
+            onClick={handleSaveAsCustomTemplate}
+            title="將當前內容與樣式儲存為新的自訂範本"
+          >
+            <FilePlus size={14} />
+            儲存範本
+          </button>
+
+          {/* 刪除自訂範本 */}
+          {selectedTemplateId.startsWith('custom_') && (
+            <button 
+              className="action-btn" 
+              onClick={handleDeleteCustomTemplate}
+              title="刪除此自訂範本"
+              style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+            >
+              <Trash2 size={14} />
+              刪除範本
+            </button>
+          )}
 
           {/* 重置按鈕 */}
           <button 
