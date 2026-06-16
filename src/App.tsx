@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import Editor from '@monaco-editor/react';
+import Editor, { DiffEditor } from '@monaco-editor/react';
 import { 
   FileText, 
   Code, 
@@ -13,7 +13,8 @@ import {
   FileCode2,
   FileDown,
   FolderOpen,
-  Save
+  Save,
+  GitCompare
 } from 'lucide-react';
 import { PRESET_TEMPLATES } from './templates';
 import { invoke } from '@tauri-apps/api/core';
@@ -24,11 +25,49 @@ function App() {
   const defaultTemplate = PRESET_TEMPLATES[0];
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(defaultTemplate.id);
   const [markdown, setMarkdown] = useState<string>(defaultTemplate.defaultMarkdown);
+  const [originalMarkdown, setOriginalMarkdown] = useState<string>(defaultTemplate.defaultMarkdown);
   const [css, setCss] = useState<string>(defaultTemplate.defaultCss);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState<boolean>(false);
   
-  const [activeTab, setActiveTab] = useState<'markdown' | 'css'>('markdown');
+  const [leftWidth, setLeftWidth] = useState<number>(50); // 左側寬度百分比
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 處理水平拖曳調整視窗比例
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.clientWidth;
+      if (containerWidth === 0) return;
+      
+      const newWidthPercent = (e.clientX / containerWidth) * 100;
+      // 限制在 20% ~ 80% 之間
+      const boundedWidth = Math.max(20, Math.min(80, newWidthPercent));
+      setLeftWidth(boundedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  const [activeTab, setActiveTab] = useState<'markdown' | 'css' | 'compare'>('markdown');
   const [previewMode, setPreviewMode] = useState<'html' | 'pdf'>('html'); // 'html' (即時) | 'pdf' (真實分頁)
   const [isAutoPreview, setIsAutoPreview] = useState<boolean>(true);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -44,17 +83,16 @@ function App() {
 
   // 雙向滾動同步所需的 refs 與 flags
   const editorRef = useRef<any>(null);
+  const diffEditorRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isScrollingFromEditor = useRef<boolean>(false);
   const isScrollingFromIframe = useRef<boolean>(false);
   const editorScrollTimeout = useRef<any>(null);
   const iframeScrollTimeout = useRef<any>(null);
 
-  // 監聽 Monaco 編輯器掛載與滾動
-  const handleEditorDidMount = (editor: any) => {
-    editorRef.current = editor;
-
-    editor.onDidScrollChange(() => {
+  // 共享的滾動同步邏輯綁定
+  const setupScrollSync = (editorInstance: any) => {
+    editorInstance.onDidScrollChange(() => {
       // 如果這次滾動是由 iframe 滾動引起的，忽略它以避免 Feedback Loop
       if (isScrollingFromIframe.current) return;
 
@@ -70,9 +108,9 @@ function App() {
           const doc = iframe.contentDocument || iframe.contentWindow.document;
           const html = doc.documentElement;
           
-          const scrollTop = editor.getScrollTop();
-          const scrollHeight = editor.getScrollHeight();
-          const clientHeight = editor.getLayoutInfo().height;
+          const scrollTop = editorInstance.getScrollTop();
+          const scrollHeight = editorInstance.getScrollHeight();
+          const clientHeight = editorInstance.getLayoutInfo().height;
           const maxEditorScroll = scrollHeight - clientHeight;
           const percentage = maxEditorScroll > 0 ? scrollTop / maxEditorScroll : 0;
           
@@ -82,6 +120,27 @@ function App() {
           console.warn("Monaco to Iframe scroll sync failed:", err);
         }
       }
+    });
+  };
+
+  // 監聽 Monaco 編輯器掛載與滾動
+  const handleEditorDidMount = (editor: any) => {
+    editorRef.current = editor;
+    setupScrollSync(editor);
+  };
+
+  // 監聽 Monaco DiffEditor 掛載與滾動、變更
+  const handleDiffEditorDidMount = (editor: any) => {
+    diffEditorRef.current = editor;
+    const modifiedEditor = editor.getModifiedEditor();
+    editorRef.current = modifiedEditor;
+
+    setupScrollSync(modifiedEditor);
+
+    modifiedEditor.onDidChangeModelContent(() => {
+      const val = modifiedEditor.getValue();
+      setMarkdown(val || '');
+      setIsDirty(true);
     });
   };
 
@@ -182,6 +241,7 @@ function App() {
         setIsLoading(true);
         const content = await invoke<string>('read_text_file', { filePath: selected });
         setMarkdown(content);
+        setOriginalMarkdown(content);
         setCurrentFilePath(selected);
         setIsDirty(false);
       }
@@ -206,6 +266,7 @@ function App() {
         filePath: currentFilePath,
         content: markdown
       });
+      setOriginalMarkdown(markdown);
       setIsDirty(false);
     } catch (err: any) {
       console.error(err);
@@ -236,6 +297,7 @@ function App() {
           filePath: filePath,
           content: markdown
         });
+        setOriginalMarkdown(markdown);
         setCurrentFilePath(filePath);
         setIsDirty(false);
       }
@@ -274,6 +336,7 @@ function App() {
     if (template) {
       setSelectedTemplateId(templateId);
       setMarkdown(template.defaultMarkdown);
+      setOriginalMarkdown(template.defaultMarkdown);
       setCss(template.defaultCss);
       setCurrentFilePath(null);
       setIsDirty(false);
@@ -286,6 +349,7 @@ function App() {
     const template = PRESET_TEMPLATES.find(t => t.id === selectedTemplateId);
     if (template) {
       setMarkdown(template.defaultMarkdown);
+      setOriginalMarkdown(template.defaultMarkdown);
       setCss(template.defaultCss);
       setCurrentFilePath(null);
       setIsDirty(false);
@@ -835,9 +899,9 @@ function App() {
       </header>
 
       {/* 主工作區 */}
-      <div className="app-container">
+      <div className="app-container" ref={containerRef}>
         {/* 左側：編輯器面板 */}
-        <section className="editor-panel">
+        <section className="editor-panel" style={{ width: `${leftWidth}%` }}>
           <div className="panel-header">
             {/* 編輯器分頁標籤 */}
             <div className="tabs-container">
@@ -847,6 +911,13 @@ function App() {
               >
                 <FileText size={16} />
                 Markdown 內容
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'compare' ? 'active' : ''}`}
+                onClick={() => setActiveTab('compare')}
+              >
+                <GitCompare size={16} />
+                對比變更
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'css' ? 'active' : ''}`}
@@ -868,7 +939,7 @@ function App() {
 
           {/* 編輯器區塊 */}
           <div className="editor-wrapper">
-            {activeTab === 'markdown' ? (
+            {activeTab === 'markdown' && (
               <Editor
                 height="100%"
                 defaultLanguage="markdown"
@@ -889,7 +960,8 @@ function App() {
                   padding: { top: 12, bottom: 12 }
                 }}
               />
-            ) : (
+            )}
+            {activeTab === 'css' && (
               <Editor
                 height="100%"
                 defaultLanguage="css"
@@ -910,11 +982,50 @@ function App() {
                 }}
               />
             )}
+            {activeTab === 'compare' && (
+              <DiffEditor
+                height="100%"
+                original={originalMarkdown}
+                modified={markdown}
+                language="markdown"
+                theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                onMount={handleDiffEditorDidMount}
+                options={{
+                  originalEditable: false,
+                  renderMarginRevertIcon: true,
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  lineNumbers: 'on',
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  padding: { top: 12, bottom: 12 }
+                }}
+              />
+            )}
           </div>
         </section>
 
+        {/* 拖動條 Resizer */}
+        <div 
+          className={`resizer-bar ${isDragging ? 'dragging' : ''}`}
+          onMouseDown={handleMouseDown}
+        />
+
         {/* 右側：預覽面板 */}
-        <section className="preview-panel">
+        <section className="preview-panel" style={{ width: `${100 - leftWidth}%` }}>
+          {/* 拖曳時的遮罩防止 iframe 劫持指針事件 */}
+          {isDragging && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9999,
+              cursor: 'col-resize',
+              backgroundColor: 'transparent'
+            }} />
+          )}
           <div className="panel-header">
             {/* 預覽模式切換 Tab */}
             <div className="tabs-container">
