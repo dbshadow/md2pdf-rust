@@ -41,9 +41,24 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // 自訂 Prompt Modal 狀態與 Ref
+  const [isPromptOpen, setIsPromptOpen] = useState<boolean>(false);
+  const [promptMessage, setPromptMessage] = useState<string>('');
+  const [promptValue, setPromptValue] = useState<string>('');
+  const promptResolveRef = useRef<((val: string | null) => void) | null>(null);
+
+  const showPrompt = (message: string, defaultValue = ''): Promise<string | null> => {
+    setPromptMessage(message);
+    setPromptValue(defaultValue);
+    setIsPromptOpen(true);
+    return new Promise((resolve) => {
+      promptResolveRef.current = resolve;
+    });
+  };
+
   // 儲存為自訂範本
-  const handleSaveAsCustomTemplate = () => {
-    const name = window.prompt('請輸入自訂範本的名稱：', '我的自訂範本');
+  const handleSaveAsCustomTemplate = async () => {
+    const name = await showPrompt('請輸入自訂範本的名稱：', '我的自訂範本');
     if (name === null) return; // 使用者按取消
     
     const trimmedName = name.trim();
@@ -1259,6 +1274,56 @@ function App() {
           </div>
         </section>
       </div>
+
+      {/* 自訂對話框 Prompt Modal */}
+      {isPromptOpen && (
+        <div className="modal-overlay" onClick={() => {
+          promptResolveRef.current?.(null);
+          setIsPromptOpen(false);
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>儲存為自訂範本</h3>
+            <p>{promptMessage}</p>
+            <input 
+              type="text" 
+              className="modal-input" 
+              value={promptValue}
+              onChange={(e) => setPromptValue(e.target.value)}
+              placeholder="請輸入範本名稱"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  promptResolveRef.current?.(promptValue);
+                  setIsPromptOpen(false);
+                } else if (e.key === 'Escape') {
+                  promptResolveRef.current?.(null);
+                  setIsPromptOpen(false);
+                }
+              }}
+            />
+            <div className="modal-actions">
+              <button 
+                className="action-btn" 
+                onClick={() => {
+                  promptResolveRef.current?.(null);
+                  setIsPromptOpen(false);
+                }}
+              >
+                取消
+              </button>
+              <button 
+                className="action-btn primary" 
+                onClick={() => {
+                  promptResolveRef.current?.(promptValue);
+                  setIsPromptOpen(false);
+                }}
+              >
+                確定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
