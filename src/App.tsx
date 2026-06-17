@@ -730,35 +730,27 @@ function App() {
       <script>
         // 監聽滾動事件，即時存入 localStorage 並同步到父視窗
         window.addEventListener('scroll', () => {
-          console.log("[DEBUG] Iframe window scrolled. Y:", window.scrollY);
           localStorage.setItem('html_preview_scroll', window.scrollY);
           
           if (window.parent && window.parent.syncIframeScroll) {
             const maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const percentage = maxScroll > 0 ? window.scrollY / maxScroll : 0;
-            console.log("[DEBUG] Iframe reporting scroll to parent window. Percentage:", percentage);
             window.parent.syncIframeScroll(percentage);
-          } else {
-            console.warn("[DEBUG] Iframe sync failed: window.parent.syncIframeScroll is undefined", window.parent);
           }
         });
         
         // 載入完成後還原滾動高度與執行 Mermaid 渲染
         window.addEventListener('DOMContentLoaded', () => {
-          console.log("[DEBUG] Iframe DOMContentLoaded triggered.");
           const saved = localStorage.getItem('html_preview_scroll');
           if (saved) {
-            console.log("[DEBUG] Iframe restoring scroll position to:", saved);
             window.scrollTo(0, parseInt(saved, 10));
           }
 
           // 執行 Mermaid 渲染
           window.mermaidRendered = false;
           const codeNodes = document.querySelectorAll("pre code.language-mermaid");
-          console.log("[DEBUG] Found language-mermaid nodes count:", codeNodes.length);
           if (codeNodes.length > 0) {
             if (typeof mermaid === 'undefined') {
-              console.error("[DEBUG] Mermaid object is undefined inside iframe.");
               // 在網頁上建立顯眼的提示，告訴使用者 CDN 載入失敗
               codeNodes.forEach((node) => {
                 const preNode = node.parentNode;
@@ -790,8 +782,6 @@ function App() {
               preNode.parentNode.replaceChild(div, preNode);
             });
             try {
-              console.log("[DEBUG] Initializing and running mermaid...");
-              
               // 1. 動態讀取當前套用範本的 CSS 樣式，實現完美配色自適應
               let primaryTextColor = "#333333";
               let primaryBorderColor = "#cbd5e1";
@@ -825,7 +815,7 @@ function App() {
                   }
                 }
               } catch (e) {
-                console.warn("[DEBUG] Failed to compute theme styles, using default colors:", e);
+                // Ignore styles failure
               }
 
               mermaid.initialize({
@@ -857,11 +847,9 @@ function App() {
               });
               mermaid.run({ querySelector: '.mermaid' })
                 .then(() => {
-                  console.log("[DEBUG] Mermaid render succeeded.");
                   window.mermaidRendered = true;
                 })
                 .catch((err) => {
-                  console.error("[DEBUG] Mermaid run promise failed:", err);
                   document.querySelectorAll(".mermaid").forEach((el) => {
                     el.style.color = "red";
                     el.style.border = "1px solid red";
@@ -872,7 +860,6 @@ function App() {
                   window.mermaidRendered = true;
                 });
             } catch (e) {
-              console.error("[DEBUG] Mermaid initialization sync exception:", e);
               window.mermaidRendered = true;
             }
           } else {

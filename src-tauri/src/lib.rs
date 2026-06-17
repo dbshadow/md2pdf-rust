@@ -11,7 +11,7 @@ pub struct ChromeBrowser {
     pub tab: Mutex<Option<Arc<Tab>>>,
 }
 
-fn markdown_to_html_with_css(markdown: &str, css: &str, base_dir: Option<&str>) -> String {
+fn markdown_to_html_internal(markdown: &str, base_dir: Option<&str>) -> String {
     use pulldown_cmark::{Parser, Options, html, Event, Tag};
     use std::path::{Path, PathBuf};
 
@@ -94,6 +94,11 @@ fn markdown_to_html_with_css(markdown: &str, css: &str, base_dir: Option<&str>) 
 
     let mut html_output = String::new();
     html::push_html(&mut html_output, events.into_iter());
+    html_output
+}
+
+fn markdown_to_html_with_css(markdown: &str, css: &str, base_dir: Option<&str>) -> String {
+    let html_output = markdown_to_html_internal(markdown, base_dir);
 
     format!(
         r##"<!DOCTYPE html>
@@ -408,89 +413,7 @@ fn write_text_file(file_path: String, content: String) -> Result<(), String> {
 
 #[tauri::command]
 fn parse_markdown(markdown: String, base_dir: Option<String>) -> Result<String, String> {
-    use pulldown_cmark::{Parser, Options, html, Event, Tag};
-    use std::path::{Path, PathBuf};
-
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    options.insert(Options::ENABLE_FOOTNOTES);
-    options.insert(Options::ENABLE_STRIKETHROUGH);
-    options.insert(Options::ENABLE_TASKLISTS);
-    options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
-
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
-        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
-
-    let parser = Parser::new_ext(&markdown, options);
-    let mut events = Vec::new();
-
-    for event in parser {
-        match event {
-            Event::Start(Tag::Image { link_type, dest_url, title, id }) => {
-                let dest_str = dest_url.to_string();
-                if !dest_str.starts_with("http://")
-                    && !dest_str.starts_with("https://")
-                    && !dest_str.starts_with("data:")
-                {
-                    let mut img_data_opt = None;
-                    let mut final_img_path = PathBuf::new();
-
-                    if Path::new(&dest_str).is_absolute() {
-                        let p = PathBuf::from(&dest_str);
-                        if let Ok(data) = std::fs::read(&p) {
-                            img_data_opt = Some(data);
-                            final_img_path = p;
-                        }
-                    } else {
-                        // 1. 優先嘗試 base_dir
-                        if let Some(ref dir) = base_dir {
-                            let p = Path::new(dir).join(&dest_str);
-                            if let Ok(data) = std::fs::read(&p) {
-                                img_data_opt = Some(data);
-                                final_img_path = p;
-                            }
-                        }
-                        // 2. 如果 base_dir 沒讀到，嘗試 exe_dir
-                        if img_data_opt.is_none() {
-                            let p = exe_dir.join(&dest_str);
-                            if let Ok(data) = std::fs::read(&p) {
-                                img_data_opt = Some(data);
-                                final_img_path = p;
-                            }
-                        }
-                    }
-
-                    if let Some(img_data) = img_data_opt {
-                        let mime_type = match final_img_path.extension().and_then(|s| s.to_str()) {
-                            Some("png") | Some("PNG") => "image/png",
-                            Some("jpg") | Some("JPG") | Some("jpeg") | Some("JPEG") => "image/jpeg",
-                            Some("gif") | Some("GIF") => "image/gif",
-                            Some("svg") | Some("SVG") => "image/svg+xml",
-                            Some("webp") | Some("WEBP") => "image/webp",
-                            _ => "image/png",
-                        };
-                        let encoded = general_purpose::STANDARD.encode(img_data);
-                        let data_url = format!("data:{};base64,{}", mime_type, encoded);
-                        events.push(Event::Start(Tag::Image {
-                            link_type,
-                            dest_url: data_url.into(),
-                            title,
-                            id,
-                        }));
-                        continue;
-                    }
-                }
-                events.push(Event::Start(Tag::Image { link_type, dest_url, title, id }));
-            }
-            _ => events.push(event),
-        }
-    }
-
-    let mut html_output = String::new();
-    html::push_html(&mut html_output, events.into_iter());
-    println!("[DEBUG] parse_markdown HTML output: {}", html_output);
+    let html_output = markdown_to_html_internal(&markdown, base_dir.as_deref());
     Ok(html_output)
 }
 
