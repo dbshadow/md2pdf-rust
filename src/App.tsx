@@ -8,6 +8,7 @@ import {
   Moon, 
   RefreshCw, 
   Eye, 
+  EyeOff,
   Check, 
   AlertCircle,
   FileCode2,
@@ -35,6 +36,7 @@ function App() {
   const [leftWidth, setLeftWidth] = useState<number>(50); // 左側寬度百分比
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showPreview, setShowPreview] = useState<boolean>(true);
 
   const [customTemplates, setCustomTemplates] = useState<any[]>(() => {
     const saved = localStorage.getItem('custom_templates');
@@ -974,6 +976,15 @@ function App() {
             重置樣式
           </button>
 
+          {/* 開關預覽 */}
+          <button 
+            className="icon-btn" 
+            onClick={() => setShowPreview(!showPreview)}
+            title={showPreview ? '隱藏預覽視窗' : '顯示預覽視窗'}
+          >
+            {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+
           {/* 主題切換 */}
           <button 
             className="icon-btn" 
@@ -988,7 +999,7 @@ function App() {
       {/* 主工作區 */}
       <div className="app-container" ref={containerRef}>
         {/* 左側：編輯器面板 */}
-        <section className="editor-panel" style={{ width: `${leftWidth}%` }}>
+        <section className="editor-panel" style={{ width: showPreview ? `${leftWidth}%` : '100%' }}>
           <div className="panel-header">
             {/* 編輯器分頁標籤 */}
             <div className="tabs-container">
@@ -1092,174 +1103,178 @@ function App() {
           </div>
         </section>
 
-        {/* 拖動條 Resizer */}
-        <div 
-          className={`resizer-bar ${isDragging ? 'dragging' : ''}`}
-          onMouseDown={handleMouseDown}
-        />
+        {showPreview && (
+          <>
+            {/* 拖動條 Resizer */}
+            <div 
+              className={`resizer-bar ${isDragging ? 'dragging' : ''}`}
+              onMouseDown={handleMouseDown}
+            />
 
-        {/* 右側：預覽面板 */}
-        <section className="preview-panel" style={{ width: `${100 - leftWidth}%` }}>
-          {/* 拖曳時的遮罩防止 iframe 劫持指針事件 */}
-          {isDragging && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 9999,
-              cursor: 'col-resize',
-              backgroundColor: 'transparent'
-            }} />
-          )}
-          <div className="panel-header">
-            {/* 預覽模式切換 Tab */}
-            <div className="tabs-container">
-              <button 
-                className={`tab-btn ${previewMode === 'html' ? 'active' : ''}`}
-                onClick={() => setPreviewMode('html')}
-                title="純 HTML 渲染，極速更新且不重置滾動條"
-              >
-                <FileText size={15} />
-                HTML 即時預覽
-              </button>
-              <button 
-                className={`tab-btn ${previewMode === 'pdf' ? 'active' : ''}`}
-                onClick={() => setPreviewMode('pdf')}
-                title="真實 PDF 列印格式預覽，可見精確分頁"
-              >
-                <FileDown size={15} />
-                PDF 真實分頁
-              </button>
-            </div>
-
-            {/* 下載控制項 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* 下載按鈕 */}
-              <button 
-                className="action-btn primary" 
-                onClick={handleDownload}
-                title="下載當前渲染的 PDF 檔案"
-              >
-                <Download size={15} />
-                下載 PDF
-              </button>
-            </div>
-          </div>
-
-          {/* 控制細項工具列 */}
-          <div className="panel-header" style={{ height: '40px', backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {/* 自動預覽 Toggle */}
-              <div 
-                className={`toggle-container ${isAutoPreview ? 'active' : ''}`}
-                onClick={() => setIsAutoPreview(!isAutoPreview)}
-                title="打字時是否即時自動更新預覽"
-              >
-                <div className="toggle-switch"></div>
-                <span>即時自動更新</span>
-              </div>
-
-              {/* 手動更新按鈕 */}
-              {!isAutoPreview && (
-                <button 
-                  className="action-btn" 
-                  onClick={() => renderPDF(markdown, css, true)}
-                  disabled={isLoading}
-                  style={{ padding: '4px 10px', fontSize: '12px' }}
-                >
-                  <Eye size={12} />
-                  手動更新預覽
-                </button>
+            {/* 右側：預覽面板 */}
+            <section className="preview-panel" style={{ width: `${100 - leftWidth}%` }}>
+              {/* 拖曳時的遮罩防止 iframe 劫持指針事件 */}
+              {isDragging && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 9999,
+                  cursor: 'col-resize',
+                  backgroundColor: 'transparent'
+                }} />
               )}
-            </div>
-            
-            {previewMode === 'html' && (
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                ⚡ HTML 模式：打字零延遲，完美保留滾動位置
-              </span>
-            )}
-            {previewMode === 'pdf' && (
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                📄 PDF 模式：呼叫後端 Puppeteer 精準渲染
-              </span>
-            )}
-          </div>
+              <div className="panel-header">
+                {/* 預覽模式切換 Tab */}
+                <div className="tabs-container">
+                  <button 
+                    className={`tab-btn ${previewMode === 'html' ? 'active' : ''}`}
+                    onClick={() => setPreviewMode('html')}
+                    title="純 HTML 渲染，極速更新且不重置滾動條"
+                  >
+                    <FileText size={15} />
+                    HTML 即時預覽
+                  </button>
+                  <button 
+                    className={`tab-btn ${previewMode === 'pdf' ? 'active' : ''}`}
+                    onClick={() => setPreviewMode('pdf')}
+                    title="真實 PDF 列印格式預覽，可見精確分頁"
+                  >
+                    <FileDown size={15} />
+                    PDF 真實分頁
+                  </button>
+                </div>
 
-          {/* 預覽主渲染區 */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-            {previewMode === 'html' ? (
-              /* HTML 即時預覽模式 */
-              <div className="pdf-container" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-                <iframe 
-                  ref={iframeRef}
-                  onLoad={handleIframeLoad}
-                  srcDoc={iframeSrcDoc} 
-                  className="pdf-iframe"
-                  style={{ backgroundColor: '#ffffff', width: '100%', height: '100%' }}
-                  title="HTML Live Preview"
-                />
+                {/* 下載控制項 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* 下載按鈕 */}
+                  <button 
+                    className="action-btn primary" 
+                    onClick={handleDownload}
+                    title="下載當前渲染的 PDF 檔案"
+                  >
+                    <Download size={15} />
+                    下載 PDF
+                  </button>
+                </div>
               </div>
-            ) : (
-              /* PDF 真實分頁預覽模式 */
-              <>
-                {/* PDF 載入時的毛玻璃 Overlay - 防止畫面全部轉黑 */}
-                {isLoading && pdfUrl && (
-                  <div className="loading-overlay">
-                    <div className="loading-spinner-container">
-                      <RefreshCw size={24} className="spin" style={{ color: 'var(--accent)' }} />
-                      <span>正在以 Puppeteer 重新編譯 PDF...</span>
-                    </div>
-                  </div>
-                )}
 
-                {/* 錯誤提示 */}
-                {errorMsg ? (
-                  <div className="preview-empty-state" style={{ color: '#ef4444' }}>
-                    <AlertCircle size={48} />
-                    <h2>PDF 渲染失敗</h2>
-                    <p style={{ maxWidth: '400px', fontSize: '14px', marginTop: '8px' }}>
-                      {errorMsg}
-                    </p>
+              {/* 控制細項工具列 */}
+              <div className="panel-header" style={{ height: '40px', backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  {/* 自動預覽 Toggle */}
+                  <div 
+                    className={`toggle-container ${isAutoPreview ? 'active' : ''}`}
+                    onClick={() => setIsAutoPreview(!isAutoPreview)}
+                    title="打字時是否即時自動更新預覽"
+                  >
+                    <div className="toggle-switch"></div>
+                    <span>即時自動更新</span>
+                  </div>
+
+                  {/* 手動更新按鈕 */}
+                  {!isAutoPreview && (
                     <button 
                       className="action-btn" 
                       onClick={() => renderPDF(markdown, css, true)}
-                      style={{ marginTop: '16px' }}
+                      disabled={isLoading}
+                      style={{ padding: '4px 10px', fontSize: '12px' }}
                     >
-                      <RefreshCw size={14} /> 重新嘗試
+                      <Eye size={12} />
+                      手動更新預覽
                     </button>
-                  </div>
-                ) : isLoading && !pdfUrl ? (
-                  /* 首次載入骨架屏 */
-                  <div className="skeleton-loader">
-                    <div className="skeleton-title"></div>
-                    <div className="skeleton-text"></div>
-                    <div className="skeleton-text"></div>
-                    <div className="skeleton-text short"></div>
-                    <div className="skeleton-image" style={{ marginTop: '20px' }}></div>
-                  </div>
-                ) : pdfUrl ? (
-                  /* PDF 內嵌 iframe */
-                  <div className="pdf-container">
+                  )}
+                </div>
+                
+                {previewMode === 'html' && (
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    ⚡ HTML 模式：打字零延遲，完美保留滾動位置
+                  </span>
+                )}
+                {previewMode === 'pdf' && (
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    📄 PDF 模式：呼叫後端 Puppeteer 精準渲染
+                  </span>
+                )}
+              </div>
+
+              {/* 預覽主渲染區 */}
+              <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                {previewMode === 'html' ? (
+                  /* HTML 即時預覽模式 */
+                  <div className="pdf-container" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                     <iframe 
-                      src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`} 
+                      ref={iframeRef}
+                      onLoad={handleIframeLoad}
+                      srcDoc={iframeSrcDoc} 
                       className="pdf-iframe"
-                      title="PDF Live Preview"
+                      style={{ backgroundColor: '#ffffff', width: '100%', height: '100%' }}
+                      title="HTML Live Preview"
                     />
                   </div>
                 ) : (
-                  /* 初始空白狀態 */
-                  <div className="preview-empty-state">
-                    <FileDown size={48} />
-                    <h2>尚無 PDF 數據</h2>
-                    <p>請點擊手動更新或確認後端服務已啟動</p>
-                  </div>
+                  /* PDF 真實分頁預覽模式 */
+                  <>
+                    {/* PDF 載入時的毛玻璃 Overlay - 防止畫面全部轉黑 */}
+                    {isLoading && pdfUrl && (
+                      <div className="loading-overlay">
+                        <div className="loading-spinner-container">
+                          <RefreshCw size={24} className="spin" style={{ color: 'var(--accent)' }} />
+                          <span>正在以 Puppeteer 重新編譯 PDF...</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 錯誤提示 */}
+                    {errorMsg ? (
+                      <div className="preview-empty-state" style={{ color: '#ef4444' }}>
+                        <AlertCircle size={48} />
+                        <h2>PDF 渲染失敗</h2>
+                        <p style={{ maxWidth: '400px', fontSize: '14px', marginTop: '8px' }}>
+                          {errorMsg}
+                        </p>
+                        <button 
+                          className="action-btn" 
+                          onClick={() => renderPDF(markdown, css, true)}
+                          style={{ marginTop: '16px' }}
+                        >
+                          <RefreshCw size={14} /> 重新嘗試
+                        </button>
+                      </div>
+                    ) : isLoading && !pdfUrl ? (
+                      /* 首次載入骨架屏 */
+                      <div className="skeleton-loader">
+                        <div className="skeleton-title"></div>
+                        <div className="skeleton-text"></div>
+                        <div className="skeleton-text"></div>
+                        <div className="skeleton-text short"></div>
+                        <div className="skeleton-image" style={{ marginTop: '20px' }}></div>
+                      </div>
+                    ) : pdfUrl ? (
+                      /* PDF 內嵌 iframe */
+                      <div className="pdf-container">
+                        <iframe 
+                          src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`} 
+                          className="pdf-iframe"
+                          title="PDF Live Preview"
+                        />
+                      </div>
+                    ) : (
+                      /* 初始空白狀態 */
+                      <div className="preview-empty-state">
+                        <FileDown size={48} />
+                        <h2>尚無 PDF 數據</h2>
+                        <p>請點擊手動更新或確認後端服務已啟動</p>
+                      </div>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </div>
-        </section>
+              </div>
+            </section>
+          </>
+        )}
       </div>
 
       {/* 自訂對話框 Prompt Modal */}
