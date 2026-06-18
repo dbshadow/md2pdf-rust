@@ -22,6 +22,8 @@ import {
 import { PRESET_TEMPLATES } from './templates';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save, ask } from '@tauri-apps/plugin-dialog';
+import { LANGUAGES, TRANSLATIONS } from './i18n';
+
 
 function App() {
   // 1. 初始化狀態 - 預設載入 Resume 模板
@@ -32,6 +34,31 @@ function App() {
   const [css, setCss] = useState<string>(defaultTemplate.defaultCss);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState<boolean>(false);
+
+  // i18n 狀態與 Ref
+  // ponytail: Keep i18n logic zero-dependency and lightweight using simple state and local storage.
+  const [lang, setLang] = useState<string>(() => {
+    return localStorage.getItem('app_lang') || 'zh-TW';
+  });
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState<boolean>(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  const t = (key: string) => {
+    return TRANSLATIONS[lang]?.[key] || TRANSLATIONS['zh-TW']?.[key] || key;
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setIsLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   
   const [leftWidth, setLeftWidth] = useState<number>(50); // 左側寬度百分比
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -60,18 +87,18 @@ function App() {
 
   // 儲存為自訂範本
   const handleSaveAsCustomTemplate = async () => {
-    const name = await showPrompt('請輸入自訂範本的名稱：', '我的自訂範本');
+    const name = await showPrompt(t('input_template_name'), t('default_template_name'));
     if (name === null) return; // 使用者按取消
     
     const trimmedName = name.trim();
     if (!trimmedName) {
-      alert('範本名稱不能為空！');
+      alert(t('template_name_empty'));
       return;
     }
 
     const newTemplate = {
       id: `custom_${Date.now()}`,
-      name: `[自訂] ${trimmedName}`,
+      name: `${t('custom_prefix')}${trimmedName}`,
       defaultMarkdown: markdown,
       defaultCss: css
     };
@@ -90,13 +117,14 @@ function App() {
 
     try {
       const confirmed = await ask(
-        `確定要刪除自訂範本「${activeTemplate.name}」嗎？`,
-        { title: '刪除自訂範本？', kind: 'warning' }
+        t('confirm_delete_template').replace('{name}', activeTemplate.name),
+        { title: t('delete_template_title'), kind: 'warning' }
       );
       if (!confirmed) return;
     } catch (e) {
-      if (!window.confirm(`確定要刪除自訂範本「${activeTemplate.name}」嗎？`)) return;
+      if (!window.confirm(t('confirm_delete_template').replace('{name}', activeTemplate.name))) return;
     }
+
 
     const updated = customTemplates.filter(t => t.id !== selectedTemplateId);
     setCustomTemplates(updated);
@@ -293,12 +321,12 @@ function App() {
     if (!isDirty) return true;
     try {
       const confirmed = await ask(
-        '當前檔案有未儲存的變更，是否放棄這些變更？',
-        { title: '放棄變更？', kind: 'warning' }
+        t('confirm_discard_changes'),
+        { title: t('discard_changes_title'), kind: 'warning' }
       );
       return confirmed;
     } catch (e) {
-      return window.confirm('當前檔案有未儲存的變更，是否放棄這些變更？');
+      return window.confirm(t('confirm_discard_changes'));
     }
   };
 
@@ -309,7 +337,7 @@ function App() {
     try {
       const selected = await open({
         filters: [{
-          name: 'Markdown 檔案',
+          name: t('markdown_file_filter'),
           extensions: ['md', 'markdown']
         }]
       });
@@ -324,7 +352,7 @@ function App() {
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err?.message || String(err) || '開啟檔案失敗');
+      setErrorMsg(err?.message || String(err) || t('open_file_failed'));
     } finally {
       setIsLoading(false);
     }
@@ -347,7 +375,7 @@ function App() {
       setIsDirty(false);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err?.message || String(err) || '儲存檔案失敗');
+      setErrorMsg(err?.message || String(err) || t('save_file_failed'));
     } finally {
       setIsLoading(false);
     }
@@ -362,7 +390,7 @@ function App() {
 
       const filePath = await save({
         filters: [{
-          name: 'Markdown 檔案',
+          name: t('markdown_file_filter'),
           extensions: ['md', 'markdown']
         }],
         defaultPath: defaultFilename
@@ -380,11 +408,12 @@ function App() {
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err?.message || String(err) || '另存新檔失敗');
+      setErrorMsg(err?.message || String(err) || t('save_file_as_failed'));
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // 3. 即時將 Markdown 編譯成 HTML (用於前端即時 HTML 預覽，調用 Rust 後端以處理相對路徑圖片)
   useEffect(() => {
@@ -476,13 +505,14 @@ function App() {
       return base64Data;
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err?.message || String(err) || '渲染 PDF 失敗');
+      setErrorMsg(err?.message || String(err) || t('status_error'));
       setStatus('error');
       return null;
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // 7. 防抖 (Debounce) 機制 - 只在自動預覽開啟，且有變更時觸發
   // 只有在 PDF 模式下打字時才自動觸發 PDF 渲染，避免在 HTML 模式下默默渲染導致編輯卡頓
@@ -539,7 +569,7 @@ function App() {
       try {
         const filePath = await save({
           filters: [{
-            name: 'PDF 文件',
+            name: t('pdf_file_filter'),
             extensions: ['pdf']
           }],
           defaultPath: defaultFilename
@@ -554,7 +584,7 @@ function App() {
         }
       } catch (err: any) {
         console.error(err);
-        setErrorMsg(err?.message || String(err) || '導出 PDF 失敗');
+        setErrorMsg(err?.message || String(err) || t('status_error'));
       } finally {
         setIsLoading(false);
       }
@@ -891,7 +921,7 @@ function App() {
                 </span>
               ) : (
                 <span>
-                  未命名草稿
+                  {t('logo_sub')}
                   {isDirty && <span style={{ color: '#ef4444', marginLeft: '2px', fontWeight: 'bold' }}>*</span>}
                 </span>
               )}
@@ -904,30 +934,30 @@ function App() {
           <button 
             className="action-btn" 
             onClick={handleOpenFile}
-            title="開啟本地 Markdown 檔案 (Ctrl+O)"
+            title={t('open_file_tooltip')}
           >
             <FolderOpen size={14} />
-            開啟檔案
+            {t('open_file')}
           </button>
 
           {/* 儲存檔案 */}
           <button 
             className="action-btn" 
             onClick={handleSaveFile}
-            title="儲存檔案變更 (Ctrl+S)"
+            title={t('save_file_tooltip')}
           >
             <Save size={14} />
-            儲存檔案
+            {t('save_file')}
           </button>
 
           {/* 另存新檔 */}
           <button 
             className="action-btn" 
             onClick={handleSaveFileAs}
-            title="另存為新的 Markdown 檔案 (Ctrl+Shift+S)"
+            title={t('save_file_as_tooltip')}
           >
             <Save size={14} />
-            另存新檔
+            {t('save_file_as')}
           </button>
 
           <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-color)', margin: '0 8px' }}></div>
@@ -947,10 +977,10 @@ function App() {
           <button 
             className="action-btn" 
             onClick={handleSaveAsCustomTemplate}
-            title="將當前內容與樣式儲存為新的自訂範本"
+            title={t('save_template_tooltip')}
           >
             <FilePlus size={14} />
-            儲存範本
+            {t('save_template')}
           </button>
 
           {/* 刪除自訂範本 */}
@@ -958,11 +988,11 @@ function App() {
             <button 
               className="action-btn" 
               onClick={handleDeleteCustomTemplate}
-              title="刪除此自訂範本"
+              title={t('delete_template_tooltip')}
               style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
             >
               <Trash2 size={14} />
-              刪除範本
+              {t('delete_template')}
             </button>
           )}
 
@@ -970,17 +1000,17 @@ function App() {
           <button 
             className="action-btn" 
             onClick={handleResetToTemplate}
-            title="還原為當前模板的預設內容與樣式"
+            title={t('reset_style_tooltip')}
           >
             <RefreshCw size={15} />
-            重置樣式
+            {t('reset_style')}
           </button>
 
           {/* 開關預覽 */}
           <button 
             className="icon-btn" 
             onClick={() => setShowPreview(!showPreview)}
-            title={showPreview ? '隱藏預覽視窗' : '顯示預覽視窗'}
+            title={showPreview ? t('hide_preview') : t('show_preview')}
           >
             {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -989,10 +1019,41 @@ function App() {
           <button 
             className="icon-btn" 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            title={theme === 'dark' ? '切換為淺色模式' : '切換為深色模式'}
+            title={theme === 'dark' ? t('toggle_light_mode') : t('toggle_dark_mode')}
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+
+          {/* 語系切換 */}
+          <div className="lang-switcher-container" ref={langMenuRef}>
+            <button 
+              className="icon-btn" 
+              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+              title="切換語言 / Switch Language"
+            >
+              <span style={{ fontSize: '18px', lineHeight: '1' }}>
+                {LANGUAGES.find(l => l.id === lang)?.flag || '🇹🇼'}
+              </span>
+            </button>
+            {isLangMenuOpen && (
+              <div className="lang-dropdown-menu">
+                {LANGUAGES.map((l) => (
+                  <button
+                    key={l.id}
+                    className={`lang-option ${lang === l.id ? 'active' : ''}`}
+                    onClick={() => {
+                      setLang(l.id);
+                      localStorage.setItem('app_lang', l.id);
+                      setIsLangMenuOpen(false);
+                    }}
+                  >
+                    <span style={{ marginRight: '8px' }}>{l.flag}</span>
+                    {l.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -1008,30 +1069,30 @@ function App() {
                 onClick={() => setActiveTab('markdown')}
               >
                 <FileText size={16} />
-                Markdown 內容
+                {t('markdown_content')}
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'compare' ? 'active' : ''}`}
                 onClick={() => setActiveTab('compare')}
               >
                 <GitCompare size={16} />
-                對比變更
+                {t('compare_changes')}
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'css' ? 'active' : ''}`}
                 onClick={() => setActiveTab('css')}
               >
                 <Code size={16} />
-                自訂 CSS
+                {t('custom_css')}
               </button>
             </div>
             
             {/* 狀態 Badge */}
             <div className={`status-badge ${status}`}>
-              {status === 'loading' && <><RefreshCw size={12} className="spin" /> 渲染中...</>}
-              {status === 'success' && <><Check size={12} /> 渲染成功</>}
-              {status === 'error' && <><AlertCircle size={12} /> 渲染失敗</>}
-              {status === 'idle' && '已就緒'}
+              {status === 'loading' && <><RefreshCw size={12} className="spin" /> {t('status_loading')}</>}
+              {status === 'success' && <><Check size={12} /> {t('status_success')}</>}
+              {status === 'error' && <><AlertCircle size={12} /> {t('status_error')}</>}
+              {status === 'idle' && t('status_idle')}
             </div>
           </div>
 
@@ -1132,18 +1193,18 @@ function App() {
                   <button 
                     className={`tab-btn ${previewMode === 'html' ? 'active' : ''}`}
                     onClick={() => setPreviewMode('html')}
-                    title="純 HTML 渲染，極速更新且不重置滾動條"
+                    title={t('html_preview_tooltip')}
                   >
                     <FileText size={15} />
-                    HTML 即時預覽
+                    {t('html_preview')}
                   </button>
                   <button 
                     className={`tab-btn ${previewMode === 'pdf' ? 'active' : ''}`}
                     onClick={() => setPreviewMode('pdf')}
-                    title="真實 PDF 列印格式預覽，可見精確分頁"
+                    title={t('pdf_preview_tooltip')}
                   >
                     <FileDown size={15} />
-                    PDF 真實分頁
+                    {t('pdf_preview')}
                   </button>
                 </div>
 
@@ -1153,10 +1214,10 @@ function App() {
                   <button 
                     className="action-btn primary" 
                     onClick={handleDownload}
-                    title="下載當前渲染的 PDF 檔案"
+                    title={t('download_pdf_tooltip')}
                   >
                     <Download size={15} />
-                    下載 PDF
+                    {t('download_pdf')}
                   </button>
                 </div>
               </div>
@@ -1168,10 +1229,10 @@ function App() {
                   <div 
                     className={`toggle-container ${isAutoPreview ? 'active' : ''}`}
                     onClick={() => setIsAutoPreview(!isAutoPreview)}
-                    title="打字時是否即時自動更新預覽"
+                    title={t('auto_update_tooltip')}
                   >
                     <div className="toggle-switch"></div>
-                    <span>即時自動更新</span>
+                    <span>{t('auto_update')}</span>
                   </div>
 
                   {/* 手動更新按鈕 */}
@@ -1183,19 +1244,19 @@ function App() {
                       style={{ padding: '4px 10px', fontSize: '12px' }}
                     >
                       <Eye size={12} />
-                      手動更新預覽
+                      {t('manual_update')}
                     </button>
                   )}
                 </div>
                 
                 {previewMode === 'html' && (
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    ⚡ HTML 模式：打字零延遲，完美保留滾動位置
+                    {t('html_mode_tip')}
                   </span>
                 )}
                 {previewMode === 'pdf' && (
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    📄 PDF 模式：呼叫後端 Puppeteer 精準渲染
+                    {t('pdf_mode_tip')}
                   </span>
                 )}
               </div>
@@ -1222,7 +1283,7 @@ function App() {
                       <div className="loading-overlay">
                         <div className="loading-spinner-container">
                           <RefreshCw size={24} className="spin" style={{ color: 'var(--accent)' }} />
-                          <span>正在以 Puppeteer 重新編譯 PDF...</span>
+                          <span>{t('rendering_pdf')}</span>
                         </div>
                       </div>
                     )}
@@ -1231,7 +1292,7 @@ function App() {
                     {errorMsg ? (
                       <div className="preview-empty-state" style={{ color: '#ef4444' }}>
                         <AlertCircle size={48} />
-                        <h2>PDF 渲染失敗</h2>
+                        <h2>{t('pdf_render_failed')}</h2>
                         <p style={{ maxWidth: '400px', fontSize: '14px', marginTop: '8px' }}>
                           {errorMsg}
                         </p>
@@ -1240,7 +1301,7 @@ function App() {
                           onClick={() => renderPDF(markdown, css, true)}
                           style={{ marginTop: '16px' }}
                         >
-                          <RefreshCw size={14} /> 重新嘗試
+                          <RefreshCw size={14} /> {t('retry')}
                         </button>
                       </div>
                     ) : isLoading && !pdfUrl ? (
@@ -1265,8 +1326,8 @@ function App() {
                       /* 初始空白狀態 */
                       <div className="preview-empty-state">
                         <FileDown size={48} />
-                        <h2>尚無 PDF 數據</h2>
-                        <p>請點擊手動更新或確認後端服務已啟動</p>
+                        <h2>{t('no_pdf_data')}</h2>
+                        <p>{t('no_pdf_data_desc')}</p>
                       </div>
                     )}
                   </>
@@ -1284,14 +1345,14 @@ function App() {
           setIsPromptOpen(false);
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>儲存為自訂範本</h3>
+            <h3>{t('save_as_custom_template')}</h3>
             <p>{promptMessage}</p>
             <input 
               type="text" 
               className="modal-input" 
               value={promptValue}
               onChange={(e) => setPromptValue(e.target.value)}
-              placeholder="請輸入範本名稱"
+              placeholder={t('input_placeholder')}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -1311,7 +1372,7 @@ function App() {
                   setIsPromptOpen(false);
                 }}
               >
-                取消
+                {t('cancel')}
               </button>
               <button 
                 className="action-btn primary" 
@@ -1320,7 +1381,7 @@ function App() {
                   setIsPromptOpen(false);
                 }}
               >
-                確定
+                {t('confirm')}
               </button>
             </div>
           </div>
