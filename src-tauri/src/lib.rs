@@ -99,6 +99,117 @@ fn markdown_to_html_internal(markdown: &str, base_dir: Option<&str>) -> String {
 
 fn markdown_to_html_with_css(markdown: &str, css: &str, title: &str, base_dir: Option<&str>) -> String {
     let html_output = markdown_to_html_internal(markdown, base_dir);
+    let has_mermaid = markdown.contains("```mermaid") || markdown.contains("~~~mermaid");
+
+    let (mermaid_head, mermaid_body) = if has_mermaid {
+        (
+            r##"<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>"##,
+            r##"<script>
+  window.mermaidRendered = false;
+  document.addEventListener("DOMContentLoaded", function() {
+    var codeNodes = document.querySelectorAll("pre code.language-mermaid");
+    if (codeNodes.length > 0 && typeof mermaid !== 'undefined') {
+      codeNodes.forEach(function(codeNode) {
+        var preNode = codeNode.parentNode;
+        var div = document.createElement("pre");
+        div.className = "mermaid";
+        div.style.whiteSpace = "pre";
+        div.style.backgroundColor = "transparent";
+        div.style.border = "none";
+        div.style.padding = "0";
+        div.style.margin = "20px 0";
+        div.style.display = "flex";
+        div.style.justifyContent = "center";
+        div.style.alignItems = "center";
+        div.style.width = "100%";
+        div.textContent = codeNode.textContent;
+        preNode.parentNode.replaceChild(div, preNode);
+      });
+      try {
+        // 1. 動態讀取當前套用範本的 CSS 樣式，實現完美配色自適應
+        var primaryTextColor = "#333333";
+        var primaryBorderColor = "#cbd5e1";
+        var lineColor = "#64748b";
+        var fontFamily = "system-ui, -apple-system, sans-serif";
+
+        try {
+          var bodyStyle = window.getComputedStyle(document.body);
+          primaryTextColor = bodyStyle.color || primaryTextColor;
+          fontFamily = bodyStyle.fontFamily || fontFamily;
+
+          var h2 = document.querySelector("h2");
+          if (h2) {
+            var h2Style = window.getComputedStyle(h2);
+            var h2Color = h2Style.color;
+            var borderBottom = h2Style.borderBottomColor;
+            
+            if (h2Style.borderBottomWidth !== "0px" && borderBottom && borderBottom !== "rgba(0, 0, 0, 0)" && borderBottom !== "transparent") {
+              primaryBorderColor = borderBottom;
+            } else {
+              primaryBorderColor = h2Color || primaryBorderColor;
+            }
+            lineColor = h2Color || lineColor;
+          } else {
+            var h1 = document.querySelector("h1") || document.querySelector("h3");
+            if (h1) {
+              var h1Style = window.getComputedStyle(h1);
+              primaryBorderColor = h1Style.color || primaryBorderColor;
+              lineColor = h1Style.color || lineColor;
+            }
+          }
+        } catch (e) {}
+
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'base',
+          themeVariables: {
+            fontFamily: fontFamily,
+            fontSize: '13px',
+            primaryColor: '#ffffff',
+            primaryTextColor: primaryTextColor,
+            primaryBorderColor: primaryBorderColor,
+            lineColor: lineColor,
+            secondaryColor: '#f8fafc',
+            tertiaryColor: '#f8fafc',
+            mainBkg: '#ffffff',
+            nodeBorder: primaryBorderColor,
+            actorBkg: '#ffffff',
+            actorBorder: primaryBorderColor,
+            actorTextColor: primaryTextColor,
+            signalColor: lineColor,
+            signalTextColor: primaryTextColor,
+            labelBoxBkgColor: '#ffffff',
+            labelBoxBorderColor: primaryBorderColor,
+            labelTextColor: primaryTextColor,
+            loopLimitEvt: '#ffffff',
+            noteBkgColor: '#ffffff',
+            noteBorderColor: primaryBorderColor
+          }
+        });
+        mermaid.run({ querySelector: '.mermaid' })
+          .then(function() {
+            window.mermaidRendered = true;
+          })
+          .catch(function(err) {
+            console.error("Mermaid run failed:", err);
+            window.mermaidRendered = true;
+          });
+      } catch(e) {
+        console.error("Mermaid init failed:", e);
+        window.mermaidRendered = true;
+      }
+    } else {
+      window.mermaidRendered = true;
+    }
+  });
+</script>"##
+        )
+    } else {
+        (
+            "",
+            r##"<script>window.mermaidRendered = true;</script>"##
+        )
+    };
 
     format!(
         r##"<!DOCTYPE html>
@@ -133,112 +244,14 @@ pre, table {{
 }}
 {}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+{}
 </head>
 <body>
 {}
-<script>
-  window.mermaidRendered = false;
-  document.addEventListener("DOMContentLoaded", function() {{
-    var codeNodes = document.querySelectorAll("pre code.language-mermaid");
-    if (codeNodes.length > 0 && typeof mermaid !== 'undefined') {{
-      codeNodes.forEach(function(codeNode) {{
-        var preNode = codeNode.parentNode;
-        var div = document.createElement("pre");
-        div.className = "mermaid";
-        div.style.whiteSpace = "pre";
-        div.style.backgroundColor = "transparent";
-        div.style.border = "none";
-        div.style.padding = "0";
-        div.style.margin = "20px 0";
-        div.style.display = "flex";
-        div.style.justifyContent = "center";
-        div.style.alignItems = "center";
-        div.style.width = "100%";
-        div.textContent = codeNode.textContent;
-        preNode.parentNode.replaceChild(div, preNode);
-      }});
-      try {{
-        // 1. 動態讀取當前套用範本的 CSS 樣式，實現完美配色自適應
-        var primaryTextColor = "#333333";
-        var primaryBorderColor = "#cbd5e1";
-        var lineColor = "#64748b";
-        var fontFamily = "system-ui, -apple-system, sans-serif";
-
-        try {{
-          var bodyStyle = window.getComputedStyle(document.body);
-          primaryTextColor = bodyStyle.color || primaryTextColor;
-          fontFamily = bodyStyle.fontFamily || fontFamily;
-
-          var h2 = document.querySelector("h2");
-          if (h2) {{
-            var h2Style = window.getComputedStyle(h2);
-            var h2Color = h2Style.color;
-            var borderBottom = h2Style.borderBottomColor;
-            
-            if (h2Style.borderBottomWidth !== "0px" && borderBottom && borderBottom !== "rgba(0, 0, 0, 0)" && borderBottom !== "transparent") {{
-              primaryBorderColor = borderBottom;
-            }} else {{
-              primaryBorderColor = h2Color || primaryBorderColor;
-            }}
-            lineColor = h2Color || lineColor;
-          }} else {{
-            var h1 = document.querySelector("h1") || document.querySelector("h3");
-            if (h1) {{
-              var h1Style = window.getComputedStyle(h1);
-              primaryBorderColor = h1Style.color || primaryBorderColor;
-              lineColor = h1Style.color || lineColor;
-            }}
-          }}
-        }} catch (e) {{}}
-
-        mermaid.initialize({{
-          startOnLoad: false,
-          theme: 'base',
-          themeVariables: {{
-            fontFamily: fontFamily,
-            fontSize: '13px',
-            primaryColor: '#ffffff',
-            primaryTextColor: primaryTextColor,
-            primaryBorderColor: primaryBorderColor,
-            lineColor: lineColor,
-            secondaryColor: '#f8fafc',
-            tertiaryColor: '#f8fafc',
-            mainBkg: '#ffffff',
-            nodeBorder: primaryBorderColor,
-            actorBkg: '#ffffff',
-            actorBorder: primaryBorderColor,
-            actorTextColor: primaryTextColor,
-            signalColor: lineColor,
-            signalTextColor: primaryTextColor,
-            labelBoxBkgColor: '#ffffff',
-            labelBoxBorderColor: primaryBorderColor,
-            labelTextColor: primaryTextColor,
-            loopLimitEvt: '#ffffff',
-            noteBkgColor: '#ffffff',
-            noteBorderColor: primaryBorderColor
-          }}
-        }});
-        mermaid.run({{ querySelector: '.mermaid' }})
-          .then(function() {{
-            window.mermaidRendered = true;
-          }})
-          .catch(function(err) {{
-            console.error("Mermaid run failed:", err);
-            window.mermaidRendered = true;
-          }});
-      }} catch(e) {{
-        console.error("Mermaid init failed:", e);
-        window.mermaidRendered = true;
-      }}
-    }} else {{
-      window.mermaidRendered = true;
-    }}
-  }});
-</script>
+{}
 </body>
 </html>"##,
-        title, css, html_output
+        title, css, mermaid_head, html_output, mermaid_body
     )
 }
 
@@ -266,8 +279,8 @@ fn try_pdf_render(file_url: &str, state: &tauri::State<'_, ChromeBrowser>) -> Re
     
     let tab = tab_guard.as_ref().unwrap();
 
-    // 設定較短的預設超時時間（例如 3 秒），避免無頭瀏覽器連線斷開或卡死時無響應
-    tab.set_default_timeout(std::time::Duration::from_secs(3));
+    // 設定預設超時時間（例如 10 秒），為包含外部 CDN 資源的網頁提供足夠的載入緩衝
+    tab.set_default_timeout(std::time::Duration::from_secs(10));
 
     // 在分頁中載入網頁
     tab.navigate_to(file_url)

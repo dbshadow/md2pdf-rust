@@ -650,6 +650,7 @@ function App() {
 
   // 9. 組裝 HTML 即時預覽的 Iframe srcdoc 內容
   // 這將 CSS 限制在 iframe 中，不影響整個應用的 UI，且更新時不丟失滾動位置
+  const hasMermaid = markdown.includes('```mermaid') || markdown.includes('~~~mermaid');
   const iframeSrcDoc = `
     <!DOCTYPE html>
     <html>
@@ -780,7 +781,7 @@ function App() {
         
         ${css}
       </style>
-      <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+      ${hasMermaid ? '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>' : ''}
     </head>
     <body>
       <div class="markdown-body">
@@ -807,6 +808,7 @@ function App() {
 
           // 執行 Mermaid 渲染
           window.mermaidRendered = false;
+          ${hasMermaid ? `
           const codeNodes = document.querySelectorAll("pre code.language-mermaid");
           if (codeNodes.length > 0) {
             if (typeof mermaid === 'undefined') {
@@ -924,6 +926,9 @@ function App() {
           } else {
             window.mermaidRendered = true;
           }
+          ` : `
+          window.mermaidRendered = true;
+          `}
         });
       </script>
     </body>
