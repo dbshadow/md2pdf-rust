@@ -463,17 +463,16 @@ function App() {
 
   // 4. 當模板變更時，重設編輯器內容
   const handleTemplateChange = async (templateId: string) => {
-    if (!(await confirmDiscard())) return;
     const allTemplates = [...PRESET_TEMPLATES, ...customTemplates];
     const template = allTemplates.find(t => t.id === templateId);
     if (template) {
       setSelectedTemplateId(templateId);
-      setMarkdown(template.defaultMarkdown);
-      setOriginalMarkdown(template.defaultMarkdown);
       setCss(template.defaultCss);
-      setCurrentFilePath(null);
-      regenerateDraftPdfName();
-      setIsDirty(false);
+      
+      if (!currentFilePath && !isDirty) {
+        setMarkdown(template.defaultMarkdown);
+        setOriginalMarkdown(template.defaultMarkdown);
+      }
     }
   };
 
