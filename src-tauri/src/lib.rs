@@ -97,7 +97,7 @@ fn markdown_to_html_internal(markdown: &str, base_dir: Option<&str>) -> String {
     html_output
 }
 
-fn markdown_to_html_with_css(markdown: &str, css: &str, base_dir: Option<&str>) -> String {
+fn markdown_to_html_with_css(markdown: &str, css: &str, title: &str, base_dir: Option<&str>) -> String {
     let html_output = markdown_to_html_internal(markdown, base_dir);
 
     format!(
@@ -105,6 +105,7 @@ fn markdown_to_html_with_css(markdown: &str, css: &str, base_dir: Option<&str>) 
 <html>
 <head>
 <meta charset="utf-8">
+<title>{}</title>
 <style>
 * {{
   box-sizing: border-box;
@@ -237,7 +238,7 @@ pre, table {{
 </script>
 </body>
 </html>"##,
-        css, html_output
+        title, css, html_output
     )
 }
 
@@ -331,11 +332,12 @@ fn kill_process_tree(pid: u32) {
 fn generate_pdf(
     markdown: String,
     css: String,
+    title: String,
     base_dir: Option<String>,
     state: tauri::State<'_, ChromeBrowser>,
 ) -> Result<String, String> {
     // 1. 將 Markdown 轉為 HTML ＋ CSS
-    let html_content = markdown_to_html_with_css(&markdown, &css, base_dir.as_deref());
+    let html_content = markdown_to_html_with_css(&markdown, &css, &title, base_dir.as_deref());
 
     // 2. 建立臨時 HTML 檔案
     let mut temp_file = Builder::new()

@@ -35,6 +35,31 @@ function App() {
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState<boolean>(false);
 
+  // 草稿 PDF 檔名與標題狀態
+  const [draftPdfName, setDraftPdfName] = useState<string>(() => {
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000);
+    return `${randomNum}.pdf`;
+  });
+
+  const getPdfTitleAndFilename = (): string => {
+    if (currentFilePath) {
+      const baseName = currentFilePath.substring(Math.max(currentFilePath.lastIndexOf('/'), currentFilePath.lastIndexOf('\\')) + 1);
+      const dotIndex = baseName.lastIndexOf('.');
+      if (dotIndex !== -1) {
+        return baseName.substring(0, dotIndex) + '.pdf';
+      }
+      return baseName + '.pdf';
+    } else {
+      return draftPdfName;
+    }
+  };
+
+  const regenerateDraftPdfName = () => {
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000);
+    setDraftPdfName(`${randomNum}.pdf`);
+  };
+
+
   // i18n 狀態與 Ref
   // ponytail: Keep i18n logic zero-dependency and lightweight using simple state and local storage.
   const [lang, setLang] = useState<string>(() => {
@@ -136,6 +161,7 @@ function App() {
     setOriginalMarkdown(defaultTemplate.defaultMarkdown);
     setCss(defaultTemplate.defaultCss);
     setCurrentFilePath(null);
+    regenerateDraftPdfName();
     setIsDirty(false);
   };
 
@@ -446,6 +472,7 @@ function App() {
       setOriginalMarkdown(template.defaultMarkdown);
       setCss(template.defaultCss);
       setCurrentFilePath(null);
+      regenerateDraftPdfName();
       setIsDirty(false);
     }
   };
@@ -460,6 +487,7 @@ function App() {
       setOriginalMarkdown(template.defaultMarkdown);
       setCss(template.defaultCss);
       setCurrentFilePath(null);
+      regenerateDraftPdfName();
       setIsDirty(false);
     }
   };
@@ -481,6 +509,7 @@ function App() {
       const base64Data = await invoke<string>('generate_pdf', {
         markdown: currentMd,
         css: currentCss,
+        title: getPdfTitleAndFilename(),
         baseDir: getBaseDir(currentFilePath)
       });
       
@@ -563,8 +592,7 @@ function App() {
     }
     
     if (currentBase64) {
-      const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8位隨機數
-      const defaultFilename = `${randomNum}.pdf`;
+      const defaultFilename = getPdfTitleAndFilename();
       
       try {
         const filePath = await save({
