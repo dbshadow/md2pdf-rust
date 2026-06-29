@@ -462,7 +462,7 @@ export const TIFFANY_MINIMAL_TEMPLATE = {
 ---
 
 ## 關於極簡主義
-極簡主義並非單純的「減少」，而是在繁雜的世界中，**精準地保留最核心的價值**。透過空間 the 留白與色調的調和，重新尋回生活的秩序感。
+極簡主義並非單純的「減少」，而是在繁雜的世界中，**精準地保留最核心的價值**。透過空間留白與色調的調和，重新尋回生活的秩序感。
 
 > 「美，是減去多餘的東西，只留下純粹的核心。」  
 > — *美學大師*
@@ -615,3 +615,268 @@ hr {
 };
 
 PRESET_TEMPLATES.push(TIFFANY_MINIMAL_TEMPLATE);
+
+export const TECH_BLUE_TEMPLATE: PresetTemplate = {
+  id: 'tech-blue',
+  name: '科技藍 (Tech Blue)',
+  defaultMarkdown: `# 工業級 Managed 交換器建置指南
+**網路解決方案與架構設計白皮書**
+
+<div class="md-logo-mock">
+  <!-- 科技藍 Logo SVG 模擬 -->
+  <svg class="tech-blue-logo-svg" viewBox="0 0 120 30" width="120" height="30">
+    <text x="0" y="22" font-family="'Outfit', 'Inter', 'Noto Sans TC', sans-serif" font-weight="900" font-size="22" fill="#0087A9">Tech Blue</text>
+  </svg>
+</div>
+
+---
+
+<div class="admonition info">
+  <p class="admonition-title">系統簡介 (Overview)</p>
+  <p>本系列交換器是最新一代工業級 Managed 乙太網路交換器。專為嚴苛環境設計，具備強大的環境適應能力、高層級防護防雷擊設計以及靈活的網路拓撲配置能力。</p>
+</div>
+
+---
+
+## 1. 系統拓撲架構
+
+在典型的智慧監控或工廠自動化場景中，交換器作為邊緣設備扮演著關鍵角色。
+
+以下為 DHCP Relay 與 IP 分配流程的 Mermaid 序列圖：
+
+\`\`\`mermaid
+sequenceDiagram
+  Client->>Switch: 1. DHCP Discover (VLAN 10)
+  Switch->>Core_Switch: 2. DHCP Relay (Option 82)
+  Core_Switch->>DHCP_Server: 3. Forward Request
+  DHCP_Server-->>Core_Switch: 4. IP Lease Offer
+  Core_Switch-->>Switch: 5. Relay Offer
+  Switch-->>Client: 6. DHCP ACK
+\`\`\`
+
+我們也可以看其在實體網路拓撲中的連接關係：
+
+\`\`\`mermaid
+graph TD
+  Internet((網際網路)) --> Firewall[核心防火牆]
+  Firewall --> CoreSwitch[核心交換器]
+  CoreSwitch --> EdgeSwitch[工業級邊緣交換器]
+  EdgeSwitch --> IP_Cam[IP 監控攝影機]
+  EdgeSwitch --> AP[Wi-Fi 6 AP]
+\`\`\`
+
+<div class="my-page-break-before"></div>
+
+## 2. 產品規格與效能指標
+
+以下為 10-Port Gigabit 工業級交換器的核心規格參數：
+
+| 埠口配置 (Port Configuration) | 備份電源輸入 (Redundant Power) | 外殼防護等級 (Enclosure) | 傳輸效能 (Switching Capacity) |
+| :--- | :--- | :--- | :--- |
+| 8-Port 10/100/1000Base-T PoE + 2-Port SFP | 12-58V DC Dual Input (Redundant) | IP30 金屬外殼 (支援導軌/壁掛) | 20 Gbps 無阻塞線速轉發 |
+
+---
+
+## 3. CLI 常規 VLAN 設定範例
+
+管理人員可以透過以下 CLI 指令，快速將 \`surveillance\` 攝影機網路劃分至獨立 VLAN 中，以確保安全性：
+
+\`\`\`bash
+# 進入全域配置模式
+Switch# configure terminal
+Switch(config)# vlan 10
+Switch(config-vlan)# name Surveillance
+Switch(config-vlan)# exit
+
+# 配置埠口為 Access 模式並加入 VLAN 10
+Switch(config)# interface gigabitethernet 1/0/1
+Switch(config-if)# switchport mode access
+Switch(config-if)# switchport access vlan 10
+Switch(config-if)# end
+\`\`\`
+
+---
+
+## 4. PDF 導出與列印配置
+
+本模板已整合列印最佳化樣式。在進行 PDF 渲染時：
+1. 所有程式碼區塊與表格已設定為 \`page-break-inside: avoid\`，防止內容跨頁斷裂。
+2. 可以在需要強行換頁的地方加入 \`<div class="my-page-break-before"></div>\`，即可在該處進行精準分頁。
+3. 頁面邊距設定為預設的 \`4rem\`。
+`,
+  defaultCss: `@page {
+  size: A4;
+  margin: 4rem;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+  color: #333333;
+  line-height: 1.6;
+  background-color: #ffffff;
+}
+
+/* 專屬 Logo 容器樣式 */
+.md-logo-mock {
+  margin: 1.5rem 0;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.tech-blue-logo-svg text {
+  font-family: 'Outfit', 'Inter', 'Noto Sans TC', sans-serif;
+  font-weight: 900;
+}
+
+/* 標題與下邊距微調 (依據使用者 extra.css) */
+.md-typeset h1, .md-typeset h2, .md-typeset h3, .md-typeset h4 {
+  margin-bottom: -0.5rem;
+}
+
+h1 {
+  font-size: 26px;
+  color: #0087A9; /* 科技藍主色 */
+  border-bottom: 2px solid #0087A9;
+  padding-bottom: 10px;
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 18px;
+  color: #006D8A;
+  border-left: 4px solid #0087A9;
+  padding-left: 10px;
+  margin-top: 2rem;
+}
+
+h3 {
+  font-size: 15px;
+  color: #00536B;
+  margin-top: 1.5rem;
+}
+
+/* 表格樣式 (整合使用者 extra.css) */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 13.5px;
+}
+
+th {
+  background-color: #0087A9;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.md-typeset table:not([class]) th, .md-typeset table:not([class]) td {
+  padding: 5px 10px;
+  min-width: 3rem;
+  border: 1px solid #e2e8f0;
+}
+
+tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* Admonition (Material 提示框樣式) */
+.admonition {
+  margin: 1.5rem 0;
+  padding: 0.8rem 1.2rem;
+  border-left: 0.25rem solid #0087A9;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  background-color: #f8fafc;
+}
+
+.admonition-title {
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+  color: #0087A9;
+  font-size: 14px;
+}
+
+.admonition.info {
+  border-left-color: #0087A9;
+  background-color: #f0f9ff;
+}
+
+.admonition.info .admonition-title {
+  color: #0087A9;
+}
+
+/* 程式碼與 CLI 區塊樣式 */
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  background-color: #f1f5f9;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  color: #0087A9;
+}
+
+pre {
+  background-color: #1e293b;
+  color: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: 12.5px;
+}
+
+/* 列表樣式 */
+ul, ol {
+  padding-left: 20px;
+  margin-bottom: 1.5rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 2rem 0;
+}
+
+/* 列印與分頁微調 (依據使用者 extra.css) */
+@media print {
+  table, code, pre {
+    page-break-inside: avoid;
+  }
+  .my-page-break-before {
+    page-break-before: always;
+  }
+  .my-page-break-after {
+    page-break-after: always;
+  }
+}
+
+/* Tweaks for Logo (依據使用者 extra.css) */
+.md-header__button.md-logo img {
+  filter: invert(1);
+  width: 5rem;
+  height: auto;
+}
+
+/* Tweaks for mermaid sequence diagrams (依據使用者 extra.css) */
+.messageText {
+  stroke: none !important;
+  font-weight: bold !important;
+}
+`
+};
+
+PRESET_TEMPLATES.push(TECH_BLUE_TEMPLATE);
