@@ -17,13 +17,15 @@ import {
   Save,
   GitCompare,
   FilePlus,
-  Trash2
+  Trash2,
+  Menu
 } from 'lucide-react';
 import { PRESET_TEMPLATES } from './templates';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save, ask } from '@tauri-apps/plugin-dialog';
 import { LANGUAGES, TRANSLATIONS } from './i18n';
 import { UpdateModal } from './UpdateModal';
+import { SettingsDrawer } from './SettingsDrawer';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 
@@ -31,6 +33,12 @@ import { relaunch } from '@tauri-apps/plugin-process';
 function App() {
   // 1. 初始化狀態 - 預設載入 Resume 模板
   const defaultTemplate = PRESET_TEMPLATES[0];
+
+  // 設定側邊欄與自動更新狀態
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [autoCheckUpdate, setAutoCheckUpdate] = useState<boolean>(() => {
+    return localStorage.getItem('md2pdf_auto_check_update') !== 'false';
+  });
 
   // 自動更新狀態
   const [updateState, setUpdateState] = useState<{
@@ -55,6 +63,7 @@ function App() {
 
   // 自動檢查更新的 useEffect
   useEffect(() => {
+    if (!autoCheckUpdate) return;
     const checkForUpdates = async () => {
       try {
         const update = await check();
@@ -81,7 +90,7 @@ function App() {
       }
     };
     checkForUpdates();
-  }, []);
+  }, [autoCheckUpdate]);
 
   const handleStartUpdate = async () => {
     if (!updateState.updateObj) return;
@@ -1159,45 +1168,14 @@ function App() {
             {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
 
-          {/* 主題切換 */}
+          {/* 設定按鈕 (三條橫線) */}
           <button 
             className="icon-btn" 
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            title={theme === 'dark' ? t('toggle_light_mode') : t('toggle_dark_mode')}
+            onClick={() => setIsSettingsOpen(true)}
+            title={t('settings')}
           >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            <Menu size={18} />
           </button>
-
-          {/* 語系切換 */}
-          <div className="lang-switcher-container" ref={langMenuRef}>
-            <button 
-              className="icon-btn" 
-              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-              title="切換語言 / Switch Language"
-            >
-              <span style={{ fontSize: '18px', lineHeight: '1' }}>
-                {LANGUAGES.find(l => l.id === lang)?.flag || '🇹🇼'}
-              </span>
-            </button>
-            {isLangMenuOpen && (
-              <div className="lang-dropdown-menu">
-                {LANGUAGES.map((l) => (
-                  <button
-                    key={l.id}
-                    className={`lang-option ${lang === l.id ? 'active' : ''}`}
-                    onClick={() => {
-                      setLang(l.id);
-                      localStorage.setItem('app_lang', l.id);
-                      setIsLangMenuOpen(false);
-                    }}
-                  >
-                    <span style={{ marginRight: '8px' }}>{l.flag}</span>
-                    {l.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </header>
 
@@ -1542,6 +1520,18 @@ function App() {
         errorMsg={updateState.errorMsg}
         onClose={() => setUpdateState(prev => ({ ...prev, isOpen: false }))}
         onUpdate={handleStartUpdate}
+      />
+
+      <SettingsDrawer
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        theme={theme}
+        setTheme={setTheme}
+        lang={lang}
+        setLang={setLang}
+        autoCheckUpdate={autoCheckUpdate}
+        setAutoCheckUpdate={setAutoCheckUpdate}
+        t={t}
       />
     </>
   );
