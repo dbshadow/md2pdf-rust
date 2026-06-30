@@ -53,5 +53,6 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add update-manifest.json
           git commit -m "chore: update manifest for ${{ github.ref_name }} [skip ci]"
+          git reset --hard HEAD
           git pull origin main --rebase
           git push origin HEAD:main
