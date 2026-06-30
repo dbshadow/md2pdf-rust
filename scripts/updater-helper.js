@@ -9,6 +9,27 @@ if (!tag) {
 }
 const version = tag.replace(/^v/, ''); // 變成 1.1.0
 
+function getChangelogNotes(ver) {
+  const changelogPath = 'CHANGELOG.md';
+  if (!fs.existsSync(changelogPath)) {
+    return `Release v${ver}`;
+  }
+  const content = fs.readFileSync(changelogPath, 'utf8');
+  // 匹配 ## vX.Y.Z 或 ## X.Y.Z 直到下一個 ## 或者是檔案結尾
+  const escapedVer = ver.replace(/\./g, '\\.');
+  const regex = new RegExp(`##\\s+v?${escapedVer}[\\s\\S]*?(?=\\n##|$)`, 'i');
+  const match = content.match(regex);
+  if (match) {
+    const lines = match[0].split('\n');
+    // 去掉第一行標題，過濾出內容行
+    const notesLines = lines.slice(1).map(line => line.trim()).filter(line => line.length > 0);
+    if (notesLines.length > 0) {
+      return notesLines.join('\n');
+    }
+  }
+  return `Release v${ver}`;
+}
+
 async function main() {
   const nsisDir = path.join('src-tauri', 'target', 'release', 'bundle', 'nsis');
   const manifestPath = 'update-manifest.json';
@@ -41,29 +62,9 @@ async function main() {
   }
   console.log(`Found installer file at: ${exePath}`);
 
-  // 獲取 GitHub Release Body 作為更新日誌 (Changelog)
-  let notes = `Release ${tag}`;
-  const token = process.env.GITHUB_TOKEN;
-  const headers = { 'User-Agent': 'Tauri-Updater-Helper' };
-  if (token) {
-    headers['Authorization'] = `token ${token}`;
-  }
-  const url = `https://api.github.com/repos/dbshadow/md2pdf-rust/releases/tags/${tag}`;
-  console.log(`Fetching release notes from: ${url}`);
-  try {
-    const res = await fetch(url, { headers });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.body) {
-        notes = data.body;
-        console.log("Successfully retrieved release notes from GitHub API.");
-      }
-    } else {
-      console.warn(`Failed to fetch release notes: HTTP ${res.status}`);
-    }
-  } catch (err) {
-    console.error(`Error fetching release notes from GitHub API: ${err.message}`);
-  }
+  // 從本地 CHANGELOG.md 解析當前版本的更新日誌
+  const notes = getChangelogNotes(version);
+  console.log(`Parsed release notes:\n${notes}`);
 
   let manifest = {};
   if (fs.existsSync(manifestPath)) {
