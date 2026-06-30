@@ -1,10 +1,10 @@
 {
   "version": "1.1.2",
-  "notes": "自 v1.0.1 版本發布以來，本專案經歷了數次重大迭代與系統重構。我們正式實作了「線上自動更新系統」，並完成了底層打包依賴、PDF 列印分頁與預設文件樣式的優化。\n\n🚀 新增功能：\n- 線上自動更新系統：啟動時背景自動檢查更新，並以自訂「科技藍」 Modal 展示下載進度百分比，完成後自動重啟。\n- 全新「科技藍 (Tech Blue)」預設模板：以專業科技藍 (#0087A9) 作為主色調，優化 Mermaid 適應與 PDF 列印分頁防腰斬。\n\n🛠️ 優化與修正：\n- 改用 NSIS 打包為 .exe 檔，避開 WiX Toolset 的網路路徑限制。\n- 移除 package.json 中平台專屬套件，解決跨平台開發 npm 依賴報錯 Bug。",
-  "pub_date": "2026-06-30T07:31:00.577Z",
+  "notes": "Release v1.1.2",
+  "pub_date": "2026-06-30T07:53:58.455Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1JwaEJIOU9kQ2xGODlJSHF5KzMycWZkNkMzQlV6TXVjcWVjSGJOak5Ib3p1UVRaSS9IWWdrRW1pM0NETFhVcWh3MkxVZUF2MjN2bHFwYWdhSjIvYmc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODA0NjU3CWZpbGU6bWQycGRmXzEuMS4yX3g2NC1zZXR1cC5leGUKaENLSWFYY3h2WE5vVGZLVytrSFVUczl6WHNaQWlFd2RHSEJmdEIydjBkNE93Zkl2T1RtWmNPbW11OExyTjRqbUN6bmF4QTlCcWUxRGQ3Wkg1eThMQVE9PQo=",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2FWL251MmZWNUR0cmVySTBmRU01c1hsM0cxSUxrT1VLWGJjekJMSnhpM3preDRDcTNKVVdCTm12SktRcU5YTTZheSszZ3NxNi83V3czRXlqb21xVHdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODA2MDM0CWZpbGU6bWQycGRmXzEuMS4yX3g2NC1zZXR1cC5leGUKNW1Eblh6ek9OTHBqVzM1Ync1R1pHTzEzSTlpQnRWbXdBS3BhUVQwYzl4a25BdGUwTHhCMSszcE5WZWtsQ1kzSW9uUmFHUUNtcW0rV3U4ZW83b0pvRGc9PQo=",
       "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.2/md2pdf_1.1.2_x64-setup.exe"
     }
   }
