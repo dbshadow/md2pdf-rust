@@ -1,10 +1,10 @@
 {
   "version": "1.1.2",
   "notes": "Release v1.1.2",
-  "pub_date": "2026-06-30T07:53:58.455Z",
+  "pub_date": "2026-06-30T08:39:13.697Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2FWL251MmZWNUR0cmVySTBmRU01c1hsM0cxSUxrT1VLWGJjekJMSnhpM3preDRDcTNKVVdCTm12SktRcU5YTTZheSszZ3NxNi83V3czRXlqb21xVHdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODA2MDM0CWZpbGU6bWQycGRmXzEuMS4yX3g2NC1zZXR1cC5leGUKNW1Eblh6ek9OTHBqVzM1Ync1R1pHTzEzSTlpQnRWbXdBS3BhUVQwYzl4a25BdGUwTHhCMSszcE5WZWtsQ1kzSW9uUmFHUUNtcW0rV3U4ZW83b0pvRGc9PQo=",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1MzSS9QSUtzRENnSWUrOXZENXU1dTdxd3pvNFFjaHk1K1NXaHBzalF4cU95M0tzUGFLSGJXRmxYTnkvYnlta0dnZnNLWlF3V0pBcS92VTBNY1NVc3dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODA4NzUwCWZpbGU6bWQycGRmXzEuMS4yX3g2NC1zZXR1cC5leGUKWWpMT09FZVRGMnJvVE83Tm5oQ1E2S0hBZGNDbDdkZjZkeWRuRmtGUjN4eno2UVV0ZjhjSTdPdDBWNVFMb21ZTjdVL2xzdVdQQnNSMmducERzVGJWQ2c9PQo=",
       "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.2/md2pdf_1.1.2_x64-setup.exe"
     }
   }
