@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { X, Sun, Moon, Languages, RefreshCw } from 'lucide-react';
+import { X, Sun, Moon, Languages, RefreshCw, Github, Linkedin } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
 import { LANGUAGES } from './i18n';
 
 interface SettingsDrawerProps {
@@ -26,6 +27,14 @@ export function SettingsDrawer({
   t,
 }: SettingsDrawerProps) {
   const [appVersion, setAppVersion] = useState<string>('1.1.1');
+
+  const handleOpenUrl = (url: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    invoke('open_url', { url }).catch((err) => {
+      console.error('Failed to open url:', err);
+      window.open(url, '_blank');
+    });
+  };
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -143,6 +152,28 @@ export function SettingsDrawer({
           <div className="version-info">
             <span>md2pdf {t('current_version') || '目前版本'}</span>
             <span className="version-tag">v{appVersion}</span>
+          </div>
+          <div className="social-links">
+            <a 
+              href="https://github.com/dbshadow/md2pdf-rust" 
+              onClick={(e) => handleOpenUrl('https://github.com/dbshadow/md2pdf-rust', e)}
+              target="_blank" 
+              rel="noopener noreferrer"
+              title="GitHub Repository"
+              className="social-icon-btn"
+            >
+              <Github size={16} />
+            </a>
+            <a 
+              href="https://www.linkedin.com/in/dbshadow/" 
+              onClick={(e) => handleOpenUrl('https://www.linkedin.com/in/dbshadow/', e)}
+              target="_blank" 
+              rel="noopener noreferrer"
+              title="LinkedIn Profile"
+              className="social-icon-btn"
+            >
+              <Linkedin size={16} />
+            </a>
           </div>
         </div>
       </div>

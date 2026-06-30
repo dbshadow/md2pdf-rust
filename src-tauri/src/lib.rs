@@ -432,6 +432,35 @@ fn parse_markdown(markdown: String, base_dir: Option<String>) -> Result<String, 
     Ok(html_output)
 }
 
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        Command::new("cmd")
+            .args(["/c", "start", "", &url])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -455,7 +484,8 @@ pub fn run() {
             save_pdf_to_path,
             parse_markdown,
             read_text_file,
-            write_text_file
+            write_text_file,
+            open_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
