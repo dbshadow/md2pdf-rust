@@ -27,13 +27,13 @@ if (!sigFile) {
   process.exit(1);
 }
 
-const sigPath = path.join(nsIsDir, sigFile);
+const sigPath = path.join(nsisDir, sigFile);
 console.log(`Found signature file at: ${sigPath}`);
 const signature = fs.readFileSync(sigPath, 'utf8').trim();
 
 // 動態取得對應的安裝檔名（把 .sig 去掉就是安裝包檔名）
 const exeFile = sigFile.replace(/\.sig$/, '');
-const exePath = path.join(nsIsDir, exeFile);
+const exePath = path.join(nsisDir, exeFile);
 if (!fs.existsSync(exePath)) {
   console.error(`Installer file not found at: ${exePath}`);
   process.exit(1);
