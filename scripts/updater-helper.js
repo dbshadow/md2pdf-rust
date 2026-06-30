@@ -12,17 +12,17 @@ const version = tag.replace(/^v/, ''); // 變成 1.1.0
 const nsisDir = path.join('src-tauri', 'target', 'release', 'bundle', 'nsis');
 const manifestPath = 'update-manifest.json';
 
-if (!fs.existsSync(nsIsDir)) {
-  console.error(`NSIS bundle directory not found at: ${nsIsDir}`);
+if (!fs.existsSync(nsisDir)) {
+  console.error(`NSIS bundle directory not found at: ${nsisDir}`);
   process.exit(1);
 }
 
 // 尋找以 .sig 結尾的檔案
-const files = fs.readdirSync(nsIsDir);
+const files = fs.readdirSync(nsisDir);
 const sigFile = files.find(f => f.endsWith('.sig'));
 
 if (!sigFile) {
-  console.error(`No .sig file found in directory: ${nsIsDir}`);
+  console.error(`No .sig file found in directory: ${nsisDir}`);
   console.error("Please make sure TAURI_SIGNING_PRIVATE_KEY is correctly set in GitHub Secrets.");
   process.exit(1);
 }
