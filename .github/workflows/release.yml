@@ -43,6 +43,8 @@ jobs:
       - name: Update update-manifest.json
         shell: bash
         run: node scripts/updater-helper.js ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit and push update-manifest.json
         shell: bash
