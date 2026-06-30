@@ -1,0 +1,10 @@
+{
+  "version": "1.1.1",
+  "pub_date": "2026-06-30T03:55:40.889Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1Z2NWdXK01RMWlOV20zS0JFcE5jUmp5dTRHME1yRWU5VDhUdU5ib1o5TGsyVWtYcWxPQWJwYm8rNEVxODdoVVFLVkhtangwbzRyQ1c1UVdHOS90RFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNzkxNzM4CWZpbGU6bWQycGRmXzEuMS4xX3g2NC1zZXR1cC5leGUKU1poS21xNngreDZzd1J6cGZZTzU0WUt4aHpMZmVwMDlYNXhIY0tyYnpJRHY2UXg4ZlFsYWMyNCtZamFOMXpod0R3SDRkckMwbVg1cHFmTUVhSnArRGc9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.1/md2pdf_1.1.1_x64-setup.exe"
+    }
+  }
+}
