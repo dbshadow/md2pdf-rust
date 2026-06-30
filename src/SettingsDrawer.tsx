@@ -26,7 +26,7 @@ export function SettingsDrawer({
   setAutoCheckUpdate,
   t,
 }: SettingsDrawerProps) {
-  const [appVersion, setAppVersion] = useState<string>('1.1.1');
+  const [appVersion, setAppVersion] = useState<string>('1.1.2');
 
   const handleOpenUrl = (url: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -44,7 +44,7 @@ export function SettingsDrawer({
         setAppVersion(version);
       } catch (_) {
         // 降級為靜態包版本
-        setAppVersion('1.1.1');
+        setAppVersion('1.1.2');
       }
     };
     fetchVersion();
