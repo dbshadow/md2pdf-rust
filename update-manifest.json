@@ -1,10 +1,10 @@
 {
   "version": "1.1.2",
-  "notes": "Release v1.1.2",
-  "pub_date": "2026-06-30T08:39:13.697Z",
+  "notes": "- Added settings drawer with theme switcher, language selection, and auto-update toggle.\n- Added GitHub repository and LinkedIn developer profile links.\n- Implemented GPU hardware acceleration for smoother toggle switch transitions.\n- Fixed theme contrast issues in light mode and transparent backgrounds in dark mode.\n- Optimized CI/CD workflow dependencies and automated release manifest notes updating.",
+  "pub_date": "2026-06-30T08:55:28.992Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1MzSS9QSUtzRENnSWUrOXZENXU1dTdxd3pvNFFjaHk1K1NXaHBzalF4cU95M0tzUGFLSGJXRmxYTnkvYnlta0dnZnNLWlF3V0pBcS92VTBNY1NVc3dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODA4NzUwCWZpbGU6bWQycGRmXzEuMS4yX3g2NC1zZXR1cC5leGUKWWpMT09FZVRGMnJvVE83Tm5oQ1E2S0hBZGNDbDdkZjZkeWRuRmtGUjN4eno2UVV0ZjhjSTdPdDBWNVFMb21ZTjdVL2xzdVdQQnNSMmducERzVGJWQ2c9PQo=",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1F5enZnZ0RGQjAyWVQwamdmaE1iOERPYU9JV0NnZEc0RXRwRnUxMWNmcjFxc2gvajFySnRiSXBFVHJWWkxXbVVVMlRVU0pPZk1MWGNPbFo5YVJVekE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODA5NzI0CWZpbGU6bWQycGRmXzEuMS4yX3g2NC1zZXR1cC5leGUKYWpKTHZWRHpjTkNQckVZcDlxeW9BdmtyOHJMR1pkMklLS0IrL3Bta2x5UzJYc3dPSy9YUEpiOExnS1NkSnN1MTJILzBPa1NJT0ZyV294WWxQQm4wQWc9PQo=",
       "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.2/md2pdf_1.1.2_x64-setup.exe"
     }
   }
