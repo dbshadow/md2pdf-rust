@@ -4,8 +4,6 @@ import {
   FileText, 
   Code, 
   Download, 
-  Sun, 
-  Moon, 
   RefreshCw, 
   Eye, 
   EyeOff,
@@ -23,7 +21,7 @@ import {
 import { PRESET_TEMPLATES } from './templates';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save, ask } from '@tauri-apps/plugin-dialog';
-import { LANGUAGES, TRANSLATIONS } from './i18n';
+import { TRANSLATIONS } from './i18n';
 import { UpdateModal } from './UpdateModal';
 import { SettingsDrawer } from './SettingsDrawer';
 import { check } from '@tauri-apps/plugin-updater';
@@ -186,24 +184,10 @@ function App() {
   const [lang, setLang] = useState<string>(() => {
     return localStorage.getItem('app_lang') || 'zh-TW';
   });
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState<boolean>(false);
-  const langMenuRef = useRef<HTMLDivElement>(null);
 
   const t = (key: string) => {
     return TRANSLATIONS[lang]?.[key] || TRANSLATIONS['zh-TW']?.[key] || key;
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
-        setIsLangMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   
   const [leftWidth, setLeftWidth] = useState<number>(50); // 左側寬度百分比
