@@ -23,11 +23,123 @@ import { PRESET_TEMPLATES } from './templates';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save, ask } from '@tauri-apps/plugin-dialog';
 import { LANGUAGES, TRANSLATIONS } from './i18n';
+import { UpdateModal } from './UpdateModal';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 
 
 function App() {
   // 1. 初始化狀態 - 預設載入 Resume 模板
   const defaultTemplate = PRESET_TEMPLATES[0];
+
+  // 自動更新狀態
+  const [updateState, setUpdateState] = useState<{
+    isOpen: boolean;
+    currentVersion: string;
+    newVersion: string;
+    updateBody: string;
+    status: 'idle' | 'downloading' | 'error' | 'finished';
+    progress: number;
+    errorMsg: string;
+    updateObj: any;
+  }>({
+    isOpen: false,
+    currentVersion: '1.0.1',
+    newVersion: '',
+    updateBody: '',
+    status: 'idle',
+    progress: 0,
+    errorMsg: '',
+    updateObj: null,
+  });
+
+  // 自動檢查更新的 useEffect
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        const update = await check();
+        if (update) {
+          let appVersion = '1.0.1';
+          try {
+            const { getVersion } = await import('@tauri-apps/api/app');
+            appVersion = await getVersion();
+          } catch (_) {}
+
+          setUpdateState({
+            isOpen: true,
+            currentVersion: appVersion,
+            newVersion: update.version,
+            updateBody: update.body || '',
+            status: 'idle',
+            progress: 0,
+            errorMsg: '',
+            updateObj: update,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to check for updates:', err);
+      }
+    };
+    checkForUpdates();
+  }, []);
+
+  const handleStartUpdate = async () => {
+    if (!updateState.updateObj) return;
+
+    setUpdateState(prev => ({
+      ...prev,
+      status: 'downloading',
+      progress: 0,
+      errorMsg: '',
+    }));
+
+    try {
+      let downloaded = 0;
+      let contentLength = 0;
+
+      await updateState.updateObj.downloadAndInstall((event: any) => {
+        switch (event.event) {
+          case 'Started':
+            contentLength = event.data.contentLength || 0;
+            setUpdateState(prev => ({ ...prev, progress: 0 }));
+            break;
+          case 'Progress':
+            downloaded += event.data.chunkLength;
+            const percent = contentLength > 0 ? (downloaded / contentLength) * 100 : 0;
+            setUpdateState(prev => ({ ...prev, progress: Math.min(percent, 99) }));
+            break;
+          case 'Finished':
+            setUpdateState(prev => ({ ...prev, progress: 100, status: 'finished' }));
+            break;
+          default:
+            break;
+        }
+      });
+
+      // 安裝完成後，延遲重啟
+      setTimeout(async () => {
+        try {
+          await relaunch();
+        } catch (relaunchErr) {
+          console.error('Failed to relaunch application:', relaunchErr);
+          setUpdateState(prev => ({
+            ...prev,
+            status: 'error',
+            errorMsg: '更新下載已完成，但自動重啟失敗。請關閉軟體並重新開啟。',
+          }));
+        }
+      }, 800);
+
+    } catch (err: any) {
+      console.error('Update download and install failed:', err);
+      setUpdateState(prev => ({
+        ...prev,
+        status: 'error',
+        errorMsg: err?.toString() || '下載安裝更新包時發生錯誤，請檢查網路連線。',
+      }));
+    }
+  };
+
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(defaultTemplate.id);
   const [markdown, setMarkdown] = useState<string>(defaultTemplate.defaultMarkdown);
   const [originalMarkdown, setOriginalMarkdown] = useState<string>(defaultTemplate.defaultMarkdown);
@@ -1419,6 +1531,18 @@ function App() {
           </div>
         </div>
       )}
+
+      <UpdateModal
+        isOpen={updateState.isOpen}
+        currentVersion={updateState.currentVersion}
+        newVersion={updateState.newVersion}
+        updateBody={updateState.updateBody}
+        status={updateState.status}
+        progress={updateState.progress}
+        errorMsg={updateState.errorMsg}
+        onClose={() => setUpdateState(prev => ({ ...prev, isOpen: false }))}
+        onUpdate={handleStartUpdate}
+      />
     </>
   );
 }

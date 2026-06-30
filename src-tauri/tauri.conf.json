@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "md2pdf",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "identifier": "com.tauri.app",
   "build": {
     "frontendDist": "../dist",
@@ -26,7 +26,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,6 +38,14 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZEODI1MUVFQUY3QjM3MUQKUldRZE4zdXY3bEdDL2J1b0REZ1VGaEpmWkJ5NVQ2UXdBbGZiYkxFVE53eXBOZ1NDblZTS1A5aVEK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/dbshadow/md2pdf-rust/main/update-manifest.json"
+      ]
     }
   }
 }

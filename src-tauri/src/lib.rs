@@ -440,6 +440,8 @@ pub fn run() {
             tab: Mutex::new(None),
         })
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         // 設定日誌過濾，全域 Info 級別，過濾掉 headless_chrome 與 tungstenite 吵雜的底層日誌
         .plugin(
             tauri_plugin_log::Builder::default()
