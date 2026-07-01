@@ -60,6 +60,21 @@ npx @tauri-apps/cli build --no-bundle
 打包完成後，獨立的 `app.exe` 將會生成在以下路徑：
 `src-tauri/target/release/app.exe`
 
+### 🍎 macOS 安裝與安全繞過說明
+
+由於本專案的 macOS 安裝程式（`_universal.dmg`）為無簽名打包（Unsigned），因此首次打開時，macOS 安全機制（Gatekeeper）會跳出警告並阻止執行。請按照以下任一方法進行安全解鎖：
+
+#### 方法一：Finder 右鍵打開（最直觀）
+1. 打開 **Finder**，進入「應用程式 (Applications)」資料夾。
+2. 找到 `md2pdf`，按住鍵盤的 **`Control` 鍵點擊** 該應用程式（或按滑鼠右鍵），在彈出選單中點選 **「打開」**。
+3. 此時跳出的警告視窗會出現 **「打開」** 按鈕，點擊後即可順利開啟，且此後雙擊即可直接執行。
+
+#### 方法二：終端機指令解鎖（一勞永逸）
+打開 Mac 的「終端機 (Terminal)」軟體，執行以下指令清除系統的隔離標籤即可直接雙擊解鎖：
+```bash
+xattr -cr /Applications/md2pdf.app
+```
+
 ---
 
 ## 📄 開源授權
@@ -124,6 +139,21 @@ npx @tauri-apps/cli build --no-bundle
 ```
 Once completed, the standalone `app.exe` will be located at:
 `src-tauri/target/release/app.exe`
+
+### 🍎 macOS Installation & Security Workaround
+
+Since the macOS bundle (`_universal.dmg`) is distributed unsigned, macOS Gatekeeper will block it upon first launch with a security warning. You can bypass this with one of the following methods:
+
+#### Method 1: Right-Click in Finder (Recommended)
+1. Open **Finder** and navigate to your **Applications** folder.
+2. Locate `md2pdf`, hold the **`Control` key and click** the app (or right-click) and select **Open**.
+3. In the popup dialog, click **Open** to authorize and launch the app. You won't need to do this again.
+
+#### Method 2: Terminal Unlock (Easiest)
+Open your **Terminal** app and run the following command to strip the quarantine flag:
+```bash
+xattr -cr /Applications/md2pdf.app
+```
 
 ---
 

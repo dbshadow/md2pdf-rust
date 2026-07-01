@@ -30,41 +30,33 @@ function getChangelogNotes(ver) {
   return `Release v${ver}`;
 }
 
+// 遞歸尋找指定目錄下所有特定後綴的檔案
+function findFilesByExtension(dir, ext, fileList = []) {
+  if (!fs.existsSync(dir)) return fileList;
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      findFilesByExtension(filePath, ext, fileList);
+    } else if (file.endsWith(ext)) {
+      fileList.push(filePath);
+    }
+  }
+  return fileList;
+}
+
 async function main() {
-  const nsisDir = path.join('src-tauri', 'target', 'release', 'bundle', 'nsis');
   const manifestPath = 'update-manifest.json';
+  const searchDir = process.argv[3] || '.'; // 可從引數傳入根目錄，預設為當前目錄
 
-  if (!fs.existsSync(nsisDir)) {
-    console.error(`NSIS bundle directory not found at: ${nsisDir}`);
+  console.log(`Searching for signature files in: ${searchDir}`);
+  const sigFiles = findFilesByExtension(searchDir, '.sig');
+
+  if (sigFiles.length === 0) {
+    console.error(`No .sig files found in directory: ${searchDir}`);
     process.exit(1);
   }
-
-  // 尋找以 .sig 結尾的檔案
-  const files = fs.readdirSync(nsisDir);
-  const sigFile = files.find(f => f.endsWith('.sig'));
-
-  if (!sigFile) {
-    console.error(`No .sig file found in directory: ${nsisDir}`);
-    console.error("Please make sure TAURI_SIGNING_PRIVATE_KEY is correctly set in GitHub Secrets.");
-    process.exit(1);
-  }
-
-  const sigPath = path.join(nsisDir, sigFile);
-  console.log(`Found signature file at: ${sigPath}`);
-  const signature = fs.readFileSync(sigPath, 'utf8').trim();
-
-  // 動態取得對應的安裝檔名（把 .sig 去掉就是安裝包檔名）
-  const exeFile = sigFile.replace(/\.sig$/, '');
-  const exePath = path.join(nsisDir, exeFile);
-  if (!fs.existsSync(exePath)) {
-    console.error(`Installer file not found at: ${exePath}`);
-    process.exit(1);
-  }
-  console.log(`Found installer file at: ${exePath}`);
-
-  // 從本地 CHANGELOG.md 解析當前版本的更新日誌
-  const notes = getChangelogNotes(version);
-  console.log(`Parsed release notes:\n${notes}`);
 
   let manifest = {};
   if (fs.existsSync(manifestPath)) {
@@ -75,17 +67,62 @@ async function main() {
     }
   }
 
-  // 更新 manifest
-  manifest.version = version;
-  manifest.notes = notes;
-  manifest.pub_date = new Date().toISOString();
+  // 確保 platforms 物件存在
   if (!manifest.platforms) {
     manifest.platforms = {};
   }
-  manifest.platforms['windows-x86_64'] = {
-    signature: signature,
-    url: `https://github.com/dbshadow/md2pdf-rust/releases/download/${tag}/${exeFile}`
-  };
+
+  let hasWindows = false;
+  let hasMac = false;
+
+  for (const sigPath of sigFiles) {
+    const sigFile = path.basename(sigPath);
+    console.log(`Processing signature file: ${sigPath}`);
+    const signature = fs.readFileSync(sigPath, 'utf8').trim();
+    const targetFile = sigFile.replace(/\.sig$/, '');
+
+    // 檢查對應的二進制檔案是否存在
+    const targetFilePath = path.join(path.dirname(sigPath), targetFile);
+    if (!fs.existsSync(targetFilePath)) {
+      console.warn(`Warning: Target installer file not found at: ${targetFilePath}`);
+    }
+
+    if (sigFile.endsWith('.exe.sig')) {
+      // Windows 平台
+      manifest.platforms['windows-x86_64'] = {
+        signature: signature,
+        url: `https://github.com/dbshadow/md2pdf-rust/releases/download/${tag}/${targetFile}`
+      };
+      hasWindows = true;
+      console.log(`Added Windows configuration for: ${targetFile}`);
+    } else if (sigFile.endsWith('.tar.gz.sig')) {
+      // macOS 平台 (darwin-x86_64 和 darwin-aarch64 共享相同的更新包簽名)
+      manifest.platforms['darwin-x86_64'] = {
+        signature: signature,
+        url: `https://github.com/dbshadow/md2pdf-rust/releases/download/${tag}/${targetFile}`
+      };
+      manifest.platforms['darwin-aarch64'] = {
+        signature: signature,
+        url: `https://github.com/dbshadow/md2pdf-rust/releases/download/${tag}/${targetFile}`
+      };
+      hasMac = true;
+      console.log(`Added macOS (universal) configurations for: ${targetFile}`);
+    }
+  }
+
+  if (!hasWindows && !hasMac) {
+    console.error("Error: Could not identify any Windows (.exe.sig) or macOS (.tar.gz.sig) signature files.");
+    process.exit(1);
+  }
+
+  // 從本地 CHANGELOG.md 解析當前版本的更新日誌
+  const notes = getChangelogNotes(version);
+  console.log(`Parsed release notes:\n${notes}`);
+
+  // 更新 manifest 基本資訊
+  manifest.version = version;
+  manifest.notes = notes;
+  manifest.pub_date = new Date().toISOString();
 
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
   console.log(`Successfully updated ${manifestPath} for version ${version}`);
