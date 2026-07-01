@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.3
+- Added official support for cross-platform macOS builds and automated updates.
+- Refactored CI/CD release workflow to use multi-platform parallel matrix jobs.
+
 ## v1.1.2
 - Added settings drawer with theme switcher, language selection, and auto-update toggle.
 - Added GitHub repository and LinkedIn developer profile links.
