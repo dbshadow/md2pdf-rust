@@ -1,19 +1,19 @@
 {
-  "version": "1.1.3",
-  "notes": "- Added official support for cross-platform macOS builds and automated updates.\n- Refactored CI/CD release workflow to use multi-platform parallel matrix jobs.",
-  "pub_date": "2026-07-01T02:22:13.870Z",
+  "version": "1.1.4",
+  "notes": "- Fixed bug where downloaded PDF remained outdated when clicking export from HTML preview mode.",
+  "pub_date": "2026-07-15T01:03:52.763Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2QvMEFjcy9CMHFPczd3Ly9DM2RNT3JFcldpNHNYTXNHZVhEZnJmOEZHYWlocVhWNThJQitjZ0U1ZXJ4dDFvMjBuQ21XZ0tkdXZiOStzVDl1UnhxcncwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcyNDQ0CWZpbGU6bWQycGRmXzEuMS4zX3g2NC1zZXR1cC5leGUKeUZuUW5DUm5VK2dtVElLWC80U2cxcUtzMEpSTEZjTkIrL0F3a2tPeThaNjR4dzV1a05BdDZTekhkZHkraUxIcU8yNHM5cVJmR2JyMXFueEdPQjArQ0E9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.3/md2pdf_1.1.3_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1R1OWFOMEl1dlFOVkpyWnI4aTY2d3lXTDRVby9FTTBSM1NiRlNzNzBiSmVuRnVGVGJLUDNxbkFucVBVQXI1MUtiZ1RoQzRraTlHVWVzTFFQcWtIQndNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MDc3NDE0CWZpbGU6bWQycGRmXzEuMS40X3g2NC1zZXR1cC5leGUKWEJCMEJvSm92UnZWeTFjM0Z0cjlwcmZLSXEzc3c1WElNR0JmWE5jd3NlbWhwK0VhdjNFdEVPSjUxTit3cjcxSnNVN2N0amRVUnRtdkhPOGp5VGx0RGc9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.4/md2pdf_1.1.4_x64-setup.exe"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2RwcCtrcmtWZHMrSnRhYk1rMFVWNnNHMmRRenFVK1dHQllFZ2RIUWFSa3BBK0F1bnlHdFhpNlAzdkI0MmUwcHJmeHF5TzJjYXNzN2YyY3JFcHJIUUFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcyNTExCWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKOHRHZTJNeUdFdnc1bXRoQTJZT0RlaFJmMW5IaDlQVWFIcjF3b3MyQ0c1a2s4TWRWWEtUOU91NkcwK1dwbmJVeHZVVXB2WjhJczFJdnhhSU9PdkE3Q0E9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.3/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2V4NThwTkJEMnNreXppSzNOK05MUGlWb3RtNEtQdWViV0J0TUtJNjFCZHZJU2ZyMWExZkYrZVlCMklLbXBHdDF1NDlnajRVYmlzckMvTG9YaUR6aUFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MDc3Mjk0CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKa203NXBZQ1RIZnlWUlRIYnZ4ZFNPaEprMWxVZ1Mwdk1mNDByT3lSeExBZVQxYWYranVRREM2OW93T2szRzNidlgzeDBBbUNHNmlFZEF3VXFMVUNJQ2c9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.4/md2pdf.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2RwcCtrcmtWZHMrSnRhYk1rMFVWNnNHMmRRenFVK1dHQllFZ2RIUWFSa3BBK0F1bnlHdFhpNlAzdkI0MmUwcHJmeHF5TzJjYXNzN2YyY3JFcHJIUUFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcyNTExCWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKOHRHZTJNeUdFdnc1bXRoQTJZT0RlaFJmMW5IaDlQVWFIcjF3b3MyQ0c1a2s4TWRWWEtUOU91NkcwK1dwbmJVeHZVVXB2WjhJczFJdnhhSU9PdkE3Q0E9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.3/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2V4NThwTkJEMnNreXppSzNOK05MUGlWb3RtNEtQdWViV0J0TUtJNjFCZHZJU2ZyMWExZkYrZVlCMklLbXBHdDF1NDlnajRVYmlzckMvTG9YaUR6aUFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MDc3Mjk0CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKa203NXBZQ1RIZnlWUlRIYnZ4ZFNPaEprMWxVZ1Mwdk1mNDByT3lSeExBZVQxYWYranVRREM2OW93T2szRzNidlgzeDBBbUNHNmlFZEF3VXFMVUNJQ2c9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.4/md2pdf.app.tar.gz"
     }
   }
 }
