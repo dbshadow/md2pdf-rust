@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.1.4
+- Fixed bug where downloaded PDF remained outdated when clicking export from HTML preview mode.
+
 ## v1.1.3
 - Added official support for cross-platform macOS builds and automated updates.
 - Refactored CI/CD release workflow to use multi-platform parallel matrix jobs.
