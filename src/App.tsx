@@ -316,6 +316,8 @@ function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const debounceTimerRef = useRef<any>(null);
+  const lastRenderedMdRef = useRef<string>('');
+  const lastRenderedCssRef = useRef<string>('');
 
   // 雙向滾動同步所需的 refs 與 flags
   const editorRef = useRef<any>(null);
@@ -634,6 +636,8 @@ function App() {
       const newPdfUrl = URL.createObjectURL(pdfBlob);
       setPdfUrl(newPdfUrl);
       setPdfBase64(base64Data);
+      lastRenderedMdRef.current = currentMd;
+      lastRenderedCssRef.current = currentCss;
       setStatus('success');
       return base64Data;
     } catch (err: any) {
@@ -690,8 +694,9 @@ function App() {
   const handleDownload = async () => {
     let currentBase64 = pdfBase64;
     
-    // 下載前先確保拿的是最新的，如果防抖還沒跑完或尚未生成，就直接手動跑一次
-    if (!currentBase64 || status === 'loading') {
+    // 下載前先確保拿的是最新的，如果防抖還沒跑完、尚未生成，或者內容已改變，就直接手動跑一次
+    const isContentChanged = markdown !== lastRenderedMdRef.current || css !== lastRenderedCssRef.current;
+    if (!currentBase64 || status === 'loading' || isContentChanged) {
       currentBase64 = await renderPDF(markdown, css, true);
     }
     
