@@ -1,19 +1,19 @@
 {
-  "version": "1.1.4",
-  "notes": "- Fixed bug where downloaded PDF remained outdated when clicking export from HTML preview mode.",
-  "pub_date": "2026-07-15T01:03:52.763Z",
+  "version": "1.1.5",
+  "notes": "- Added 6-position PDF header and footer configuration (Top/Bottom Left, Center, Right).\n- Supported dynamic page counters (`{{page}}`, `{{totalPages}}`, `{{title}}`, `{{date}}`) using native CSS Paged Media `counter(page)` & `counter(pages)`.\n- Fixed Monaco DiffEditor layout and splitter vanishing issue on window resize.\n- Fixed `activeTab` initialization ReferenceError and Vite ES Module type-only import SyntaxError.",
+  "pub_date": "2026-07-22T06:43:18.834Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1R1OWFOMEl1dlFOVkpyWnI4aTY2d3lXTDRVby9FTTBSM1NiRlNzNzBiSmVuRnVGVGJLUDNxbkFucVBVQXI1MUtiZ1RoQzRraTlHVWVzTFFQcWtIQndNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MDc3NDE0CWZpbGU6bWQycGRmXzEuMS40X3g2NC1zZXR1cC5leGUKWEJCMEJvSm92UnZWeTFjM0Z0cjlwcmZLSXEzc3c1WElNR0JmWE5jd3NlbWhwK0VhdjNFdEVPSjUxTit3cjcxSnNVN2N0amRVUnRtdkhPOGp5VGx0RGc9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.4/md2pdf_1.1.4_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1RhS2NUUi95QjFNc01Pd3BLRVpta0ozU2tTV3kxTEVBRGgvY3ZGNWVmVUhMU2d3WlZoR0UycmwxZUhNelhQcnNpTTBVcVhLZVIyblNXYWJuNzZuQUFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NzAyNTc3CWZpbGU6bWQycGRmXzEuMS41X3g2NC1zZXR1cC5leGUKNUVpMUloK2krNy8zbHVwMUxIaUVLZDlzWkllVGw4ZlQ5VnVsVjRJSXYzQVR1Y3R2ZGV5bGNxa1hzTXpBOU5zTW44eDB0bHNCN2VxeGtObmxJQ0srRFE9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.5/md2pdf_1.1.5_x64-setup.exe"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2V4NThwTkJEMnNreXppSzNOK05MUGlWb3RtNEtQdWViV0J0TUtJNjFCZHZJU2ZyMWExZkYrZVlCMklLbXBHdDF1NDlnajRVYmlzckMvTG9YaUR6aUFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MDc3Mjk0CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKa203NXBZQ1RIZnlWUlRIYnZ4ZFNPaEprMWxVZ1Mwdk1mNDByT3lSeExBZVQxYWYranVRREM2OW93T2szRzNidlgzeDBBbUNHNmlFZEF3VXFMVUNJQ2c9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.4/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2FsUm82ZFFHc3R0T3pJcHBxYjcxeTNDU2VKTG5UZ0dCZXRuR2h4VUJrSGxvWFBUbWZIVkhYTWZiOXJFNlFXcFl1ZXJ0UWFlaEVNNU9JTVAySTJwZXdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NzAyNDg5CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKa3IrSEh3eHkxN2s1MGZiTC9rMnBEanRFdkVzMHU3L3lXZWJ1R1JqeUFrWVgzdnZBMDdCSmpqeEZaR0M1R2FuclNSQStLVmo5R215ZXNPMGsxSjBCQ2c9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.5/md2pdf.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2V4NThwTkJEMnNreXppSzNOK05MUGlWb3RtNEtQdWViV0J0TUtJNjFCZHZJU2ZyMWExZkYrZVlCMklLbXBHdDF1NDlnajRVYmlzckMvTG9YaUR6aUFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MDc3Mjk0CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKa203NXBZQ1RIZnlWUlRIYnZ4ZFNPaEprMWxVZ1Mwdk1mNDByT3lSeExBZVQxYWYranVRREM2OW93T2szRzNidlgzeDBBbUNHNmlFZEF3VXFMVUNJQ2c9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.4/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2FsUm82ZFFHc3R0T3pJcHBxYjcxeTNDU2VKTG5UZ0dCZXRuR2h4VUJrSGxvWFBUbWZIVkhYTWZiOXJFNlFXcFl1ZXJ0UWFlaEVNNU9JTVAySTJwZXdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NzAyNDg5CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKa3IrSEh3eHkxN2s1MGZiTC9rMnBEanRFdkVzMHU3L3lXZWJ1R1JqeUFrWVgzdnZBMDdCSmpqeEZaR0M1R2FuclNSQStLVmo5R215ZXNPMGsxSjBCQ2c9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.5/md2pdf.app.tar.gz"
     }
   }
 }
