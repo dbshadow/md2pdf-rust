@@ -40,7 +40,7 @@ export function SettingsDrawer({
   setHeaderFooterConfig,
   t,
 }: SettingsDrawerProps) {
-  const [appVersion, setAppVersion] = useState<string>('1.1.4');
+  const [appVersion, setAppVersion] = useState<string>('1.1.5');
 
   const handleOpenUrl = (url: string, e: React.MouseEvent) => {
     e.preventDefault();

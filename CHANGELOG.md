@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.5
+- Added 6-position PDF header and footer configuration (Top/Bottom Left, Center, Right).
+- Supported dynamic page counters (`{{page}}`, `{{totalPages}}`, `{{title}}`, `{{date}}`) using native CSS Paged Media `counter(page)` & `counter(pages)`.
+- Fixed Monaco DiffEditor layout and splitter vanishing issue on window resize.
+- Fixed `activeTab` initialization ReferenceError and Vite ES Module type-only import SyntaxError.
+
 ## v1.1.4
 - Fixed bug where downloaded PDF remained outdated when clicking export from HTML preview mode.
 
