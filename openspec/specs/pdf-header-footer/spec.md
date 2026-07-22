@@ -1,0 +1,24 @@
+# pdf-header-footer Specification
+
+## Purpose
+Specifies requirements for PDF headers, footers, and dynamic page numbering.
+
+## Requirements
+
+### Requirement: Header and Footer Configuration UI
+The system SHALL provide configuration controls in the Settings Drawer to enable or disable headers/footers and customize header text, footer text, and page numbering format across 6 positions (Top Left, Top Center, Top Right, Bottom Left, Bottom Center, Bottom Right).
+
+#### Scenario: User toggles header and footer display
+- **WHEN** user enables the "Header & Footer" toggle switch in Settings Drawer
+- **THEN** system SHALL display inputs for 6 positional text inputs, persisting choices in localStorage
+
+#### Scenario: User inputs custom dynamic variables
+- **WHEN** user types `{{page}}`, `{{totalPages}}`, `{{title}}`, or `{{date}}` into header or footer input fields
+- **THEN** system SHALL dynamically replace these placeholders with CSS `counter(page)` and `counter(pages)` or evaluated document values during PDF preview and export
+
+### Requirement: PDF Header and Footer Rendering
+The system SHALL render customized headers and footers with dynamic page numbers on every exported PDF page according to the user's configuration.
+
+#### Scenario: Exporting PDF with dynamic page numbers
+- **WHEN** user exports a PDF document with footer text set to "Page {{page}} of {{totalPages}}"
+- **THEN** every page of the generated PDF SHALL contain the evaluated page numbers in the bottom footer region via native CSS Paged Media rules

@@ -23,7 +23,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { open, save, ask } from '@tauri-apps/plugin-dialog';
 import { TRANSLATIONS } from './i18n';
 import { UpdateModal } from './UpdateModal';
-import { SettingsDrawer } from './SettingsDrawer';
+import { SettingsDrawer, type HeaderFooterConfig } from './SettingsDrawer';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 
@@ -320,6 +320,88 @@ function App() {
   const debounceTimerRef = useRef<any>(null);
   const lastRenderedMdRef = useRef<string>('');
   const lastRenderedCssRef = useRef<string>('');
+  const lastHeaderFooterConfigRef = useRef<string>('');
+
+  const [headerFooterConfig, setHeaderFooterConfig] = useState<HeaderFooterConfig>(() => {
+    const saved = localStorage.getItem('md2pdf_header_footer_config');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          enabled: !!parsed.enabled,
+          topLeftText: parsed.topLeftText ?? '',
+          topCenterText: parsed.topCenterText ?? parsed.headerText ?? '{{title}}',
+          topRightText: parsed.topRightText ?? '',
+          bottomLeftText: parsed.bottomLeftText ?? '',
+          bottomCenterText: parsed.bottomCenterText ?? parsed.footerText ?? 'Page {{page}} of {{totalPages}}',
+          bottomRightText: parsed.bottomRightText ?? '',
+        };
+      } catch (e) {
+        console.error('Failed to parse headerFooterConfig:', e);
+      }
+    }
+    return {
+      enabled: false,
+      topLeftText: '',
+      topCenterText: '{{title}}',
+      topRightText: '',
+      bottomLeftText: '',
+      bottomCenterText: 'Page {{page}} of {{totalPages}}',
+      bottomRightText: '',
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('md2pdf_header_footer_config', JSON.stringify(headerFooterConfig));
+  }, [headerFooterConfig]);
+
+  const formatCssContent = (text: string | undefined, docTitle: string, currentDate: string): string => {
+    if (!text || !text.trim()) return '';
+    let str = text
+      .replace(/\{\{title\}\}/g, docTitle)
+      .replace(/\{\{date\}\}/g, currentDate)
+      .replace(/"/g, '\\"');
+    
+    str = str
+      .replace(/\{\{page\}\}/g, '" counter(page) "')
+      .replace(/\{\{totalPages\}\}/g, '" counter(pages) "');
+
+    return `"${str}"`;
+  };
+
+  const getEffectiveCss = (baseCss: string): string => {
+    if (!headerFooterConfig.enabled) return baseCss;
+
+    const docTitle = getPdfTitleAndFilename().replace(/\.pdf$/i, '');
+    const currentDate = new Date().toLocaleDateString();
+
+    const topLeft = formatCssContent(headerFooterConfig.topLeftText, docTitle, currentDate);
+    const topCenter = formatCssContent(headerFooterConfig.topCenterText, docTitle, currentDate);
+    const topRight = formatCssContent(headerFooterConfig.topRightText, docTitle, currentDate);
+
+    const bottomLeft = formatCssContent(headerFooterConfig.bottomLeftText, docTitle, currentDate);
+    const bottomCenter = formatCssContent(headerFooterConfig.bottomCenterText, docTitle, currentDate);
+    const bottomRight = formatCssContent(headerFooterConfig.bottomRightText, docTitle, currentDate);
+
+    const boxesCss = [
+      topLeft ? `@top-left { content: ${topLeft}; font-size: 9pt; color: #64748b; }` : '',
+      topCenter ? `@top-center { content: ${topCenter}; font-size: 9pt; color: #64748b; }` : '',
+      topRight ? `@top-right { content: ${topRight}; font-size: 9pt; color: #64748b; }` : '',
+      bottomLeft ? `@bottom-left { content: ${bottomLeft}; font-size: 9pt; color: #64748b; }` : '',
+      bottomCenter ? `@bottom-center { content: ${bottomCenter}; font-size: 9pt; color: #64748b; }` : '',
+      bottomRight ? `@bottom-right { content: ${bottomRight}; font-size: 9pt; color: #64748b; }` : '',
+    ].filter(Boolean).join('\n        ');
+
+    const headerFooterCss = `
+      @page {
+        margin-top: 20mm;
+        margin-bottom: 20mm;
+        ${boxesCss}
+      }
+    `;
+
+    return `${baseCss}\n${headerFooterCss}`;
+  };
 
   // 當左側寬度或切換頁籤改變時，強制重新調用 Monaco 編輯器的 layout() 重新測量佈局
   useEffect(() => {
@@ -624,9 +706,10 @@ function App() {
     setErrorMsg(null);
     
     try {
+      const effectiveCss = getEffectiveCss(currentCss);
       const base64Data = await invoke<string>('generate_pdf', {
         markdown: currentMd,
-        css: currentCss,
+        css: effectiveCss,
         title: getPdfTitleAndFilename(),
         baseDir: getBaseDir(currentFilePath)
       });
@@ -650,6 +733,7 @@ function App() {
       setPdfBase64(base64Data);
       lastRenderedMdRef.current = currentMd;
       lastRenderedCssRef.current = currentCss;
+      lastHeaderFooterConfigRef.current = JSON.stringify(headerFooterConfig);
       setStatus('success');
       return base64Data;
     } catch (err: any) {
@@ -707,7 +791,8 @@ function App() {
     let currentBase64 = pdfBase64;
     
     // 下載前先確保拿的是最新的，如果防抖還沒跑完、尚未生成，或者內容已改變，就直接手動跑一次
-    const isContentChanged = markdown !== lastRenderedMdRef.current || css !== lastRenderedCssRef.current;
+    const isHfChanged = JSON.stringify(headerFooterConfig) !== lastHeaderFooterConfigRef.current;
+    const isContentChanged = markdown !== lastRenderedMdRef.current || css !== lastRenderedCssRef.current || isHfChanged;
     if (!currentBase64 || status === 'loading' || isContentChanged) {
       currentBase64 = await renderPDF(markdown, css, true);
     }
@@ -1535,6 +1620,8 @@ function App() {
         setLang={setLang}
         autoCheckUpdate={autoCheckUpdate}
         setAutoCheckUpdate={setAutoCheckUpdate}
+        headerFooterConfig={headerFooterConfig}
+        setHeaderFooterConfig={setHeaderFooterConfig}
         t={t}
       />
     </>

@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { X, Sun, Moon, Languages, RefreshCw, Github, Linkedin } from 'lucide-react';
+import { X, Sun, Moon, Languages, RefreshCw, Github, Linkedin, FileText } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { LANGUAGES } from './i18n';
+
+export interface HeaderFooterConfig {
+  enabled: boolean;
+  topLeftText: string;
+  topCenterText: string;
+  topRightText: string;
+  bottomLeftText: string;
+  bottomCenterText: string;
+  bottomRightText: string;
+}
 
 interface SettingsDrawerProps {
   isOpen: boolean;
@@ -12,6 +22,8 @@ interface SettingsDrawerProps {
   setLang: (lang: string) => void;
   autoCheckUpdate: boolean;
   setAutoCheckUpdate: (val: boolean) => void;
+  headerFooterConfig: HeaderFooterConfig;
+  setHeaderFooterConfig: (val: HeaderFooterConfig | ((prev: HeaderFooterConfig) => HeaderFooterConfig)) => void;
   t: (key: string) => string;
 }
 
@@ -24,6 +36,8 @@ export function SettingsDrawer({
   setLang,
   autoCheckUpdate,
   setAutoCheckUpdate,
+  headerFooterConfig,
+  setHeaderFooterConfig,
   t,
 }: SettingsDrawerProps) {
   const [appVersion, setAppVersion] = useState<string>('1.1.4');
@@ -145,6 +159,175 @@ export function SettingsDrawer({
               />
               <span className="slider round"></span>
             </label>
+          </div>
+
+          {/* 4. 頁首頁尾與頁碼設定 */}
+          <div className="setting-section">
+            <div className="setting-item">
+              <div className="setting-info">
+                <span className="setting-label">
+                  <FileText size={18} />
+                  {t('enable_header_footer') || '頁首與頁尾印製'}
+                </span>
+                <span className="setting-desc">
+                  {t('enable_header_footer_desc') || '在 PDF 導出的每一頁加入頁首標題與頁尾頁碼'}
+                </span>
+              </div>
+              <label className="drawer-toggle-switch">
+                <input 
+                  type="checkbox" 
+                  checked={headerFooterConfig.enabled} 
+                  onChange={(e) => setHeaderFooterConfig(prev => ({ ...prev, enabled: e.target.checked }))}
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
+
+            {headerFooterConfig.enabled && (
+              <div className="header-footer-inputs" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* 頁首 3 方位 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
+                    {t('header_section') || '頁首區域 (Header)'}
+                  </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                        {t('top_left') || '左上'}
+                      </label>
+                      <input
+                        type="text"
+                        value={headerFooterConfig.topLeftText || ''}
+                        onChange={(e) => setHeaderFooterConfig(prev => ({ ...prev, topLeftText: e.target.value }))}
+                        placeholder=""
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                        {t('top_center') || '中上'}
+                      </label>
+                      <input
+                        type="text"
+                        value={headerFooterConfig.topCenterText || ''}
+                        onChange={(e) => setHeaderFooterConfig(prev => ({ ...prev, topCenterText: e.target.value }))}
+                        placeholder="{{title}}"
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                        {t('top_right') || '右上'}
+                      </label>
+                      <input
+                        type="text"
+                        value={headerFooterConfig.topRightText || ''}
+                        onChange={(e) => setHeaderFooterConfig(prev => ({ ...prev, topRightText: e.target.value }))}
+                        placeholder=""
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 頁尾 3 方位 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
+                    {t('footer_section') || '頁尾區域 (Footer)'}
+                  </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                        {t('bottom_left') || '左下'}
+                      </label>
+                      <input
+                        type="text"
+                        value={headerFooterConfig.bottomLeftText || ''}
+                        onChange={(e) => setHeaderFooterConfig(prev => ({ ...prev, bottomLeftText: e.target.value }))}
+                        placeholder=""
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                        {t('bottom_center') || '中下'}
+                      </label>
+                      <input
+                        type="text"
+                        value={headerFooterConfig.bottomCenterText || ''}
+                        onChange={(e) => setHeaderFooterConfig(prev => ({ ...prev, bottomCenterText: e.target.value }))}
+                        placeholder="Page {{page}} of {{totalPages}}"
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                        {t('bottom_right') || '右下'}
+                      </label>
+                      <input
+                        type="text"
+                        value={headerFooterConfig.bottomRightText || ''}
+                        onChange={(e) => setHeaderFooterConfig(prev => ({ ...prev, bottomRightText: e.target.value }))}
+                        placeholder=""
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', lineHeight: '1.4' }}>
+                  💡 {t('vars_hint')}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

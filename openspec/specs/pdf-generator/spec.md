@@ -30,4 +30,9 @@ The system SHALL automatically resolve local image paths referenced in Markdown 
 #### Scenario: Local relative image in Markdown
 - **WHEN** the markdown text contains `![alt](./test.png)` and a valid image file named `test.png` exists in either the document's base directory or the application's executable directory
 - **THEN** the system SHALL encode the image binary to a base64 string, replace the image source with a `data:image/png;base64,...` URL, and display the image correctly in both the preview and generated PDF
+### Requirement: Extended PDF Generation Command Parameters
+The system SHALL accept header and footer HTML templates or configuration objects when invoking the PDF generation IPC command.
 
+#### Scenario: Rust backend receives header and footer config
+- **WHEN** frontend calls `generate_pdf` IPC command with header and footer parameters
+- **THEN** Rust headless browser SHALL apply the header and footer configuration into Chromium print settings or injected CSS Paged Media `@page` rules
