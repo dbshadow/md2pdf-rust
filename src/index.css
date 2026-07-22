@@ -119,6 +119,8 @@ body {
 /* 左右分欄 */
 .editor-panel {
   width: 50%;
+  min-width: 280px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary);
@@ -152,6 +154,8 @@ body {
 
 .preview-panel {
   width: 50%;
+  min-width: 280px;
+  flex-shrink: 0;
   background-color: var(--bg-tertiary);
   display: flex;
   flex-direction: column;

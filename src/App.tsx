@@ -285,8 +285,10 @@ function App() {
       if (containerWidth === 0) return;
       
       const newWidthPercent = (e.clientX / containerWidth) * 100;
-      // 限制在 20% ~ 80% 之間
-      const boundedWidth = Math.max(20, Math.min(80, newWidthPercent));
+      // 確保左側編輯器與右側預覽面板至少維持 280px 像素寬度，避免過度壓縮
+      const minPercent = Math.max(20, (280 / containerWidth) * 100);
+      const maxPercent = Math.min(80, 100 - minPercent);
+      const boundedWidth = Math.max(minPercent, Math.min(maxPercent, newWidthPercent));
       setLeftWidth(boundedWidth);
     };
 
@@ -318,6 +320,16 @@ function App() {
   const debounceTimerRef = useRef<any>(null);
   const lastRenderedMdRef = useRef<string>('');
   const lastRenderedCssRef = useRef<string>('');
+
+  // 當左側寬度或切換頁籤改變時，強制重新調用 Monaco 編輯器的 layout() 重新測量佈局
+  useEffect(() => {
+    if (diffEditorRef.current) {
+      diffEditorRef.current.layout();
+    }
+    if (editorRef.current) {
+      editorRef.current.layout();
+    }
+  }, [leftWidth, activeTab]);
 
   // 雙向滾動同步所需的 refs 與 flags
   const editorRef = useRef<any>(null);
@@ -1263,6 +1275,9 @@ function App() {
                 options={{
                   originalEditable: false,
                   renderMarginRevertIcon: true,
+                  renderSideBySide: true,
+                  useInlineViewWhenSpaceIsLimited: false,
+                  enableSplitViewResizing: true,
                   minimap: { enabled: false },
                   fontSize: 14,
                   lineNumbers: 'on',
