@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.6
+- Added LaTeX mathematical formula rendering support via KaTeX in both live HTML preview and PDF export.
+- Supported inline math (`$...$`, `\(...\)`) and display block math (`$$...$$`, `\[...\]`).
+- Enhanced headless browser PDF compiler to synchronize and wait for KaTeX formula rendering completion.
+
 ## v1.1.5
 - Added 6-position PDF header and footer configuration (Top/Bottom Left, Center, Right).
 - Supported dynamic page counters (`{{page}}`, `{{totalPages}}`, `{{title}}`, `{{date}}`) using native CSS Paged Media `counter(page)` & `counter(pages)`.

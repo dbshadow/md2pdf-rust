@@ -244,10 +244,34 @@ pre, table {{
 }}
 {}
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 {}
 </head>
 <body>
 {}
+<script>
+  window.katexRendered = false;
+  document.addEventListener("DOMContentLoaded", function() {{
+    if (typeof renderMathInElement !== 'undefined') {{
+      try {{
+        renderMathInElement(document.body, {{
+          delimiters: [
+            {{ left: "$$", right: "$$", display: true }},
+            {{ left: "\\[", right: "\\]", display: true }},
+            {{ left: "$", right: "$", display: false }},
+            {{ left: "\\(", right: "\\)", display: false }}
+          ],
+          throwOnError: false
+        }});
+      }} catch (e) {{
+        console.error("KaTeX rendering error:", e);
+      }}
+    }}
+    window.katexRendered = true;
+  }});
+</script>
 {}
 </body>
 </html>"##,
@@ -289,10 +313,13 @@ fn try_pdf_render(file_url: &str, state: &tauri::State<'_, ChromeBrowser>) -> Re
     tab.wait_until_navigated()
         .map_err(|e| format!("載入頁面超時: {}", e))?;
 
-    // 輪詢等待 window.mermaidRendered 變為 true（最多等待 2 秒，每 50ms 檢查一次）
+    // 輪詢等待 window.mermaidRendered 與 window.katexRendered 變為 true（最多等待 2 秒，每 50ms 檢查一次）
     let mut rendered = false;
     for _ in 0..40 {
-        if let Ok(eval_res) = tab.evaluate("typeof window !== 'undefined' && window.mermaidRendered === true", false) {
+        if let Ok(eval_res) = tab.evaluate(
+            "typeof window !== 'undefined' && window.mermaidRendered === true && window.katexRendered === true",
+            false,
+        ) {
             if let Some(true) = eval_res.value.as_ref().and_then(|v| v.as_bool()) {
                 rendered = true;
                 break;
@@ -301,7 +328,7 @@ fn try_pdf_render(file_url: &str, state: &tauri::State<'_, ChromeBrowser>) -> Re
         std::thread::sleep(std::time::Duration::from_millis(50));
     }
     if !rendered {
-        println!("[WARN] Mermaid 渲染超時或未正確標記 window.mermaidRendered = true。");
+        println!("[WARN] Mermaid 或 KaTeX 渲染超時。");
     }
 
     // 配置 PDF 列印參數，啟用 prefer_css_page_size

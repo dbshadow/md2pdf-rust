@@ -988,6 +988,9 @@ function App() {
         
         ${css}
       </style>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+      <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
       ${hasMermaid ? '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>' : ''}
     </head>
     <body>
@@ -1006,11 +1009,28 @@ function App() {
           }
         });
         
-        // 載入完成後還原滾動高度與執行 Mermaid 渲染
+        // 載入完成後還原滾動高度與執行 KaTeX / Mermaid 渲染
         window.addEventListener('DOMContentLoaded', () => {
           const saved = localStorage.getItem('html_preview_scroll');
           if (saved) {
             window.scrollTo(0, parseInt(saved, 10));
+          }
+
+          // 執行 KaTeX 渲染
+          if (typeof renderMathInElement !== 'undefined') {
+            try {
+              renderMathInElement(document.body, {
+                delimiters: [
+                  { left: '$$', right: '$$', display: true },
+                  { left: '\\[', right: '\\]', display: true },
+                  { left: '$', right: '$', display: false },
+                  { left: '\\(', right: '\\)', display: false }
+                ],
+                throwOnError: false
+              });
+            } catch (e) {
+              console.error('KaTeX rendering error:', e);
+            }
           }
 
           // 執行 Mermaid 渲染

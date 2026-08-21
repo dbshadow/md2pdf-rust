@@ -35,4 +35,9 @@ The system SHALL accept header and footer HTML templates or configuration object
 
 #### Scenario: Rust backend receives header and footer config
 - **WHEN** frontend calls `generate_pdf` IPC command with header and footer parameters
-- **THEN** Rust headless browser SHALL apply the header and footer configuration into Chromium print settings or injected CSS Paged Media `@page` rules
+### Requirement: KaTeX Async Render Waiting in PDF Generation
+The system SHALL ensure KaTeX rendering is complete before the headless browser captures and exports the PDF.
+
+#### Scenario: Compiling Markdown with math formulas to PDF
+- **WHEN** user requests PDF compilation for Markdown containing LaTeX formulas
+- **THEN** Rust headless browser SHALL wait for both Mermaid diagrams and KaTeX formulas to finish rendering before capturing the PDF buffer
