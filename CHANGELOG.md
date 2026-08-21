@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.1.7
+- Fixed text font alteration in standard parentheses by refining KaTeX delimiters to only match `$` and `$$`.
+
 ## v1.1.6
 - Added LaTeX mathematical formula rendering support via KaTeX in both live HTML preview and PDF export.
 - Supported inline math (`$...$`, `\(...\)`) and display block math (`$$...$$`, `\[...\]`).
