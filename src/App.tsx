@@ -59,35 +59,87 @@ function App() {
     updateObj: null,
   });
 
-  // 自動檢查更新的 useEffect
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
+  const [updateCheckMsg, setUpdateCheckMsg] = useState<string | null>(null);
+
+  // 檢查更新函式（支援自動重試與 CDN 備援）
+  const checkForUpdates = async (isManual = false) => {
+    if (isManual) {
+      setIsCheckingUpdate(true);
+      setUpdateCheckMsg(null);
+    }
+
+    try {
+      const maxRetries = isManual ? 2 : 1;
+      let lastError: any = null;
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 0) {
+            // 重試前稍微延遲 800ms
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+
+          const update = await check();
+
+          if (update) {
+            let appVersion = '1.1.7';
+            try {
+              const { getVersion } = await import('@tauri-apps/api/app');
+              appVersion = await getVersion();
+            } catch (_) {}
+
+            setUpdateState({
+              isOpen: true,
+              currentVersion: appVersion,
+              newVersion: update.version,
+              updateBody: update.body || '',
+              status: 'idle',
+              progress: 0,
+              errorMsg: '',
+              updateObj: update,
+            });
+
+            if (isManual) {
+              setUpdateCheckMsg(null);
+            }
+            return;
+          } else {
+            if (isManual) {
+              setUpdateCheckMsg(t('already_latest') || '目前已是最新版本');
+              setTimeout(() => setUpdateCheckMsg(null), 4000);
+            }
+            return;
+          }
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Update check attempt ${attempt + 1} failed:`, err);
+        }
+      }
+
+      if (lastError) {
+        console.error('Failed to check for updates after retries:', lastError);
+        if (isManual) {
+          const errorText = typeof lastError === 'string' ? lastError : lastError?.message || JSON.stringify(lastError);
+          setUpdateCheckMsg(`檢查失敗: ${errorText}`);
+          setTimeout(() => setUpdateCheckMsg(null), 6000);
+        }
+      }
+    } finally {
+      if (isManual) {
+        setIsCheckingUpdate(false);
+      }
+    }
+  };
+
+  // 啟動時自動檢查更新（增加 1.5 秒延遲緩衝以等待網路連線與 Tauri 初始化完成）
   useEffect(() => {
     if (!autoCheckUpdate) return;
-    const checkForUpdates = async () => {
-      try {
-        const update = await check();
-        if (update) {
-          let appVersion = '1.0.1';
-          try {
-            const { getVersion } = await import('@tauri-apps/api/app');
-            appVersion = await getVersion();
-          } catch (_) {}
+    const timer = setTimeout(() => {
+      checkForUpdates(false);
+    }, 1500);
 
-          setUpdateState({
-            isOpen: true,
-            currentVersion: appVersion,
-            newVersion: update.version,
-            updateBody: update.body || '',
-            status: 'idle',
-            progress: 0,
-            errorMsg: '',
-            updateObj: update,
-          });
-        }
-      } catch (err) {
-        console.error('Failed to check for updates:', err);
-      }
-    };
-    checkForUpdates();
+    return () => clearTimeout(timer);
   }, [autoCheckUpdate]);
 
   const handleStartUpdate = async () => {
@@ -1640,6 +1692,9 @@ function App() {
         setAutoCheckUpdate={setAutoCheckUpdate}
         headerFooterConfig={headerFooterConfig}
         setHeaderFooterConfig={setHeaderFooterConfig}
+        onCheckUpdate={() => checkForUpdates(true)}
+        isCheckingUpdate={isCheckingUpdate}
+        updateCheckMsg={updateCheckMsg}
         t={t}
       />
     </>
