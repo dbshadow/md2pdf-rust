@@ -1,19 +1,19 @@
 {
-  "version": "1.1.7",
-  "notes": "- Fixed text font alteration in standard parentheses by refining KaTeX delimiters to only match `$` and `$$`.",
-  "pub_date": "2026-08-21T16:55:16.468Z",
+  "version": "1.1.8",
+  "notes": "- Added manual \"Check for Updates\" button with real-time feedback and Loading spinner in Settings.\n- Added multi-CDN fallback endpoints (GitHub Raw + jsDelivr) and automatic retry mechanism with exponential backoff for stable updates.\n- Optimized Settings Drawer layout to fit all controls cleanly on desktop screens without vertical scrollbars.\n- Fixed stuck checking state by ensuring asynchronous update check flags reset reliably.",
+  "pub_date": "2026-08-21T18:50:11.598Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2ZQWkZwRjhaUE9nV0xvSVIyZTM4VTJ3N0VsZmJlcGYvbUF2dkgrWXFqa0dvZ0V4YWpZcjhiNjEzRGFHZE0rQmJYVGIycFR4M29QRjdEVEhPaCs2R1E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzMxMTU2CWZpbGU6bWQycGRmXzEuMS43X3g2NC1zZXR1cC5leGUKRytDVmFOSGZzN1BLb3o2Y1E1N29kV21MZjdaYXAzd01QcmlKRWF1RnI0anB3ZXhzREJselowVW9FbFpGSHpvUkc0T1JiTmU0SUdyYkoxTFZtT3g4QXc9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.7/md2pdf_1.1.7_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2V4c1k2OWFXU0pVR1UycHpaSG52bnJWc21xYU9uV1FranYrcWxaNHY4N1RqZlYwWFQvSEtBTStadWh6MVNNY0ppRG9iNWhFMklFOEVxYktjQ2t0R0FjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM4MDM3CWZpbGU6bWQycGRmXzEuMS44X3g2NC1zZXR1cC5leGUKS3FSa3V3Mm9KOGFoWGFZMFJDTXA1bTdFLzRlbnVzdkt0a3N6bFpaRkwwZzNUL3JyRGpoUFh0bU1IK205RldRZjVGeWRjeitrVlNRL08yU3I2SEZlQmc9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.8/md2pdf_1.1.8_x64-setup.exe"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2NmRU5LVHRxa2ZLMThYTkVJb3kvdVppMHhPMmhzYVBiQitQamVacjIzL3hscGRyVDhlV0JWQkNKci9JczZxeS9HeDE3U1d0clhPNURmQWdydDVjRHdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzMxMjk3CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKc0JYNFVKRElYZFp4eVBiNURCKzQ3bUlxSzBwQkhzU2FHWEJJemlUYU84T1Y3eDNHcFBLYjdmcDNYTUFQSXhzcVFFS1pLOHF2ZW9BU0hWTGJ4a09rQUE9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.7/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1h5Rk5oR2FiREJRRVNmL0FMeEdjMjNydHdsbS9ZSGdoL3V2ODd3bUxGSHJoL2lhZEhDSnpFZnFUQjRBemdCaS9yWjVxR1grZGZDV21Zb3hVaFVUVWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM4MTgyCWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKSWNTaHE2R2dDQUNvdjZMazl0U0JyOTU5YzR2enJuVGxEMDBuNThOd3p2TmlhRWQ4RDRPYWk4cUVtYUxxRkpsejR5NG1vZ3RvbkxMTlhubzB1SkhMQnc9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.8/md2pdf.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2NmRU5LVHRxa2ZLMThYTkVJb3kvdVppMHhPMmhzYVBiQitQamVacjIzL3hscGRyVDhlV0JWQkNKci9JczZxeS9HeDE3U1d0clhPNURmQWdydDVjRHdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzMxMjk3CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKc0JYNFVKRElYZFp4eVBiNURCKzQ3bUlxSzBwQkhzU2FHWEJJemlUYU84T1Y3eDNHcFBLYjdmcDNYTUFQSXhzcVFFS1pLOHF2ZW9BU0hWTGJ4a09rQUE9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.7/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1h5Rk5oR2FiREJRRVNmL0FMeEdjMjNydHdsbS9ZSGdoL3V2ODd3bUxGSHJoL2lhZEhDSnpFZnFUQjRBemdCaS9yWjVxR1grZGZDV21Zb3hVaFVUVWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM4MTgyCWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKSWNTaHE2R2dDQUNvdjZMazl0U0JyOTU5YzR2enJuVGxEMDBuNThOd3p2TmlhRWQ4RDRPYWk4cUVtYUxxRkpsejR5NG1vZ3RvbkxMTlhubzB1SkhMQnc9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.8/md2pdf.app.tar.gz"
     }
   }
 }
