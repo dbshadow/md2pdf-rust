@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.8
+- Added manual "Check for Updates" button with real-time feedback and Loading spinner in Settings.
+- Added multi-CDN fallback endpoints (GitHub Raw + jsDelivr) and automatic retry mechanism with exponential backoff for stable updates.
+- Optimized Settings Drawer layout to fit all controls cleanly on desktop screens without vertical scrollbars.
+- Fixed stuck checking state by ensuring asynchronous update check flags reset reliably.
+
 ## v1.1.7
 - Fixed text font alteration in standard parentheses by refining KaTeX delimiters to only match `$` and `$$`.
 

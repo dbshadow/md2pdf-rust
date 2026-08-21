@@ -24,6 +24,9 @@ interface SettingsDrawerProps {
   setAutoCheckUpdate: (val: boolean) => void;
   headerFooterConfig: HeaderFooterConfig;
   setHeaderFooterConfig: (val: HeaderFooterConfig | ((prev: HeaderFooterConfig) => HeaderFooterConfig)) => void;
+  onCheckUpdate: () => Promise<void>;
+  isCheckingUpdate: boolean;
+  updateCheckMsg: string | null;
   t: (key: string) => string;
 }
 
@@ -38,9 +41,12 @@ export function SettingsDrawer({
   setAutoCheckUpdate,
   headerFooterConfig,
   setHeaderFooterConfig,
+  onCheckUpdate,
+  isCheckingUpdate,
+  updateCheckMsg,
   t,
 }: SettingsDrawerProps) {
-  const [appVersion, setAppVersion] = useState<string>('1.1.7');
+  const [appVersion, setAppVersion] = useState<string>('1.1.8');
 
   const handleOpenUrl = (url: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -58,7 +64,7 @@ export function SettingsDrawer({
         setAppVersion(version);
       } catch (_) {
         // 降級為靜態包版本
-        setAppVersion('1.1.4');
+        setAppVersion('1.1.7');
       }
     };
     fetchVersion();
@@ -140,25 +146,44 @@ export function SettingsDrawer({
             </select>
           </div>
 
-          {/* 3. 自動更新開關 */}
-          <div className="setting-item">
-            <div className="setting-info">
-              <span className="setting-label">
-                <RefreshCw size={18} />
-                {t('auto_check_update') || '自動檢查更新'}
-              </span>
-              <span className="setting-desc">
-                {t('auto_check_update_desc') || '啟動軟體時在背景自動偵測更新'}
-              </span>
+          {/* 3. 自動更新開關與手動檢查 */}
+          <div className="setting-section">
+            <div className="setting-item">
+              <div className="setting-info">
+                <span className="setting-label">
+                  <RefreshCw size={18} />
+                  {t('auto_check_update') || '自動檢查更新'}
+                </span>
+                <span className="setting-desc">
+                  {t('auto_check_update_desc') || '啟動軟體時在背景自動偵測更新'}
+                </span>
+              </div>
+              <label className="drawer-toggle-switch">
+                <input 
+                  type="checkbox" 
+                  checked={autoCheckUpdate} 
+                  onChange={(e) => handleToggleAutoUpdate(e.target.checked)}
+                />
+                <span className="slider round"></span>
+              </label>
             </div>
-            <label className="drawer-toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={autoCheckUpdate} 
-                onChange={(e) => handleToggleAutoUpdate(e.target.checked)}
-              />
-              <span className="slider round"></span>
-            </label>
+            
+            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <button
+                className="action-btn"
+                onClick={onCheckUpdate}
+                disabled={isCheckingUpdate}
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+              >
+                <RefreshCw size={13} className={isCheckingUpdate ? 'spin' : ''} />
+                {isCheckingUpdate ? (t('checking_update') || '檢查中...') : (t('check_update_now') || '檢查更新')}
+              </button>
+              {updateCheckMsg && (
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {updateCheckMsg}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* 4. 頁首頁尾與頁碼設定 */}
@@ -166,7 +191,7 @@ export function SettingsDrawer({
             <div className="setting-item">
               <div className="setting-info">
                 <span className="setting-label">
-                  <FileText size={18} />
+                  <FileText size={16} />
                   {t('enable_header_footer') || '頁首與頁尾印製'}
                 </span>
                 <span className="setting-desc">
@@ -184,15 +209,15 @@ export function SettingsDrawer({
             </div>
 
             {headerFooterConfig.enabled && (
-              <div className="header-footer-inputs" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="header-footer-inputs" style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* 頁首 3 方位 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--accent)' }}>
                     {t('header_section') || '頁首區域 (Header)'}
                   </span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
                         {t('top_left') || '左上'}
                       </label>
                       <input
@@ -202,17 +227,17 @@ export function SettingsDrawer({
                         placeholder=""
                         style={{
                           width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '6px',
+                          padding: '4px 6px',
+                          borderRadius: '5px',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
                           color: 'var(--text-primary)',
-                          fontSize: '12px'
+                          fontSize: '11px'
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
                         {t('top_center') || '中上'}
                       </label>
                       <input
@@ -222,17 +247,17 @@ export function SettingsDrawer({
                         placeholder="{{title}}"
                         style={{
                           width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '6px',
+                          padding: '4px 6px',
+                          borderRadius: '5px',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
                           color: 'var(--text-primary)',
-                          fontSize: '12px'
+                          fontSize: '11px'
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
                         {t('top_right') || '右上'}
                       </label>
                       <input
@@ -242,12 +267,12 @@ export function SettingsDrawer({
                         placeholder=""
                         style={{
                           width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '6px',
+                          padding: '4px 6px',
+                          borderRadius: '5px',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
                           color: 'var(--text-primary)',
-                          fontSize: '12px'
+                          fontSize: '11px'
                         }}
                       />
                     </div>
@@ -255,13 +280,13 @@ export function SettingsDrawer({
                 </div>
 
                 {/* 頁尾 3 方位 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--accent)' }}>
                     {t('footer_section') || '頁尾區域 (Footer)'}
                   </span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
                         {t('bottom_left') || '左下'}
                       </label>
                       <input
@@ -271,17 +296,17 @@ export function SettingsDrawer({
                         placeholder=""
                         style={{
                           width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '6px',
+                          padding: '4px 6px',
+                          borderRadius: '5px',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
                           color: 'var(--text-primary)',
-                          fontSize: '12px'
+                          fontSize: '11px'
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
                         {t('bottom_center') || '中下'}
                       </label>
                       <input
@@ -291,17 +316,17 @@ export function SettingsDrawer({
                         placeholder="Page {{page}} of {{totalPages}}"
                         style={{
                           width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '6px',
+                          padding: '4px 6px',
+                          borderRadius: '5px',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
                           color: 'var(--text-primary)',
-                          fontSize: '12px'
+                          fontSize: '11px'
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>
                         {t('bottom_right') || '右下'}
                       </label>
                       <input
@@ -311,19 +336,19 @@ export function SettingsDrawer({
                         placeholder=""
                         style={{
                           width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '6px',
+                          padding: '4px 6px',
+                          borderRadius: '5px',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
                           color: 'var(--text-primary)',
-                          fontSize: '12px'
+                          fontSize: '11px'
                         }}
                       />
                     </div>
                   </div>
                 </div>
 
-                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', lineHeight: '1.4' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--text-tertiary)', lineHeight: '1.3' }}>
                   💡 {t('vars_hint')}
                 </span>
               </div>
