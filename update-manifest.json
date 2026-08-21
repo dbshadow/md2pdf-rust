@@ -1,19 +1,19 @@
 {
-  "version": "1.1.6",
-  "notes": "- Added LaTeX mathematical formula rendering support via KaTeX in both live HTML preview and PDF export.\n- Supported inline math (`$...$`, `\\(...\\)`) and display block math (`$$...$$`, `\\[...\\]`).\n- Enhanced headless browser PDF compiler to synchronize and wait for KaTeX formula rendering completion.",
-  "pub_date": "2026-08-21T09:34:25.119Z",
+  "version": "1.1.7",
+  "notes": "- Fixed text font alteration in standard parentheses by refining KaTeX delimiters to only match `$` and `$$`.",
+  "pub_date": "2026-08-21T16:55:16.468Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1JSQTRKOGk5ZFRmTXZBSnJpTHVXQ2pyMWVUeUVTdmNCdVdVc2JDV1NzSnlRSURkeFBHcytZZ1JtUERhOVBsVDR4MDZVZklQWml4UXFiaHBPK3BST2d3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzA0ODAzCWZpbGU6bWQycGRmXzEuMS42X3g2NC1zZXR1cC5leGUKVGl3eTA2Z1F3UWdMK0R4SzdSYzAzajZET00zUzNhcDdZSUp0MjhxU3NmbEtidTViOGhRWUkvRUdjYWs1NW5NSnhadkJNRTBPL1FSS1lRengyMExOQ2c9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.6/md2pdf_1.1.6_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2ZQWkZwRjhaUE9nV0xvSVIyZTM4VTJ3N0VsZmJlcGYvbUF2dkgrWXFqa0dvZ0V4YWpZcjhiNjEzRGFHZE0rQmJYVGIycFR4M29QRjdEVEhPaCs2R1E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzMxMTU2CWZpbGU6bWQycGRmXzEuMS43X3g2NC1zZXR1cC5leGUKRytDVmFOSGZzN1BLb3o2Y1E1N29kV21MZjdaYXAzd01QcmlKRWF1RnI0anB3ZXhzREJselowVW9FbFpGSHpvUkc0T1JiTmU0SUdyYkoxTFZtT3g4QXc9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.7/md2pdf_1.1.7_x64-setup.exe"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1hRdHRoUU9GSkhndkpCMHdaei91TjRkZ1YwbHNYWmhheFJZMkM4d0VSYkxWMy9GVTN3N2tIQlhlNzhXZ1JPK3lSQnBOSGhPNW9kL294UXYrQnlodUFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzA0ODQyCWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKNkRyaTRWdXF3ekFWM204UGtia045dnNCWTMzbkY4c0pPQUg2cUFuLyt1ME1XdFNEYXhTSXIydFA2ZjlKMW50Mkd3RlBpK0pDb0c4TjJrNzY2ZHU4QkE9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.6/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2NmRU5LVHRxa2ZLMThYTkVJb3kvdVppMHhPMmhzYVBiQitQamVacjIzL3hscGRyVDhlV0JWQkNKci9JczZxeS9HeDE3U1d0clhPNURmQWdydDVjRHdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzMxMjk3CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKc0JYNFVKRElYZFp4eVBiNURCKzQ3bUlxSzBwQkhzU2FHWEJJemlUYU84T1Y3eDNHcFBLYjdmcDNYTUFQSXhzcVFFS1pLOHF2ZW9BU0hWTGJ4a09rQUE9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.7/md2pdf.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL1hRdHRoUU9GSkhndkpCMHdaei91TjRkZ1YwbHNYWmhheFJZMkM4d0VSYkxWMy9GVTN3N2tIQlhlNzhXZ1JPK3lSQnBOSGhPNW9kL294UXYrQnlodUFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzA0ODQyCWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKNkRyaTRWdXF3ekFWM204UGtia045dnNCWTMzbkY4c0pPQUg2cUFuLyt1ME1XdFNEYXhTSXIydFA2ZjlKMW50Mkd3RlBpK0pDb0c4TjJrNzY2ZHU4QkE9PQo=",
-      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.6/md2pdf.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRZE4zdXY3bEdDL2NmRU5LVHRxa2ZLMThYTkVJb3kvdVppMHhPMmhzYVBiQitQamVacjIzL3hscGRyVDhlV0JWQkNKci9JczZxeS9HeDE3U1d0clhPNURmQWdydDVjRHdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzMxMjk3CWZpbGU6bWQycGRmLmFwcC50YXIuZ3oKc0JYNFVKRElYZFp4eVBiNURCKzQ3bUlxSzBwQkhzU2FHWEJJemlUYU84T1Y3eDNHcFBLYjdmcDNYTUFQSXhzcVFFS1pLOHF2ZW9BU0hWTGJ4a09rQUE9PQo=",
+      "url": "https://github.com/dbshadow/md2pdf-rust/releases/download/v1.1.7/md2pdf.app.tar.gz"
     }
   }
 }
